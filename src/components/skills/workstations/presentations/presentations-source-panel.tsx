@@ -36,6 +36,7 @@ export function PresentationsSourcePanel() {
   const [researchQuery, setResearchQuery] = useState("");
   const [isResearching, setIsResearching] = useState(false);
   const [importResearchOpen, setImportResearchOpen] = useState(false);
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
 
   const sources = session?.sources ?? [];
   const aspectRatio = session?.aspectRatio ?? "16:9";
@@ -93,6 +94,50 @@ export function PresentationsSourcePanel() {
       setError(e instanceof Error ? e.message : "Research failed");
     } finally {
       setIsResearching(false);
+    }
+  };
+
+  const isUrl = (text: string) => {
+    try {
+      const url = new URL(text.trim());
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
+  const handleFetchUrl = async () => {
+    const url = pasteText.trim();
+    if (!isUrl(url) || isFetchingUrl) return;
+    setIsFetchingUrl(true);
+    try {
+      const res = await fetch("/api/presentations/fetch-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Fetch failed" }));
+        setError(err.error || `HTTP ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      addSources([
+        {
+          id: crypto.randomUUID(),
+          type: "url",
+          name: `URL：${new URL(url).hostname}`,
+          path: "",
+          isDirectory: false,
+          textContent: data.content,
+          sourceUrl: url,
+        },
+      ]);
+      setPasteText("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Fetch URL failed");
+    } finally {
+      setIsFetchingUrl(false);
     }
   };
 
@@ -264,6 +309,26 @@ export function PresentationsSourcePanel() {
             rows={4}
             className="w-full rounded-lg border border-cy-border bg-cy-input/50 px-3 py-2 text-sm text-cy-text placeholder:text-cy-muted/50 focus:border-cy-accent/50 focus:outline-none resize-none"
           />
+          {pasteText.trim() && isUrl(pasteText) && (
+            <div className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2">
+              <span className="text-sm">🔗</span>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-purple-300">偵測到 URL</p>
+                <p className="text-[10px] text-cy-muted">要自動擷取網頁內容嗎？</p>
+              </div>
+              <button
+                onClick={handleFetchUrl}
+                disabled={isFetchingUrl}
+                className="rounded-md bg-purple-600/80 px-3 py-1 text-xs font-medium text-white hover:bg-purple-600 disabled:opacity-50"
+              >
+                {isFetchingUrl ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "擷取"
+                )}
+              </button>
+            </div>
+          )}
           <button
             onClick={handlePasteSubmit}
             disabled={!pasteText.trim()}

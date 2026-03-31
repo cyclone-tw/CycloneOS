@@ -5,6 +5,7 @@
 
 import { NextRequest } from "next/server";
 import { getLLMProvider } from "@/lib/llm-provider";
+import { feloSearch } from "@/lib/felo/search";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,42 +17,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "query is required" }, { status: 400 });
   }
 
-  // Step 1: Call Felo Chat API
-  const feloApiKey = process.env.FELO_API_KEY;
-  if (!feloApiKey) {
-    return Response.json(
-      { error: "FELO_API_KEY not configured" },
-      { status: 500 },
-    );
-  }
-
+  // Step 1: Call Felo Search API
   let feloAnswer = "";
   let feloResources: Array<{ title?: string; link?: string; snippet?: string }> = [];
 
   try {
-    const feloRes = await fetch("https://openapi.felo.ai/v2/chat", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${feloApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query }),
-    });
-
-    if (!feloRes.ok) {
-      const errorText = await feloRes.text();
-      return Response.json(
-        { error: `Felo API error: ${feloRes.status} ${errorText}` },
-        { status: 502 },
-      );
-    }
-
-    const feloData = await feloRes.json();
-    feloAnswer = feloData?.data?.answer || "";
-    feloResources = feloData?.data?.resources || [];
+    const result = await feloSearch(query);
+    feloAnswer = result.answer;
+    feloResources = result.resources;
   } catch (e) {
     return Response.json(
-      { error: `Felo API request failed: ${e}` },
+      { error: `Felo search failed: ${e instanceof Error ? e.message : e}` },
       { status: 502 },
     );
   }

@@ -6,12 +6,13 @@ export type SessionStatus = "configuring" | "processing" | "completed";
 
 export interface SourceItem {
   id: string;
-  type: "local" | "drive" | "notion" | "obsidian" | "text" | "research";
+  type: "local" | "drive" | "notion" | "obsidian" | "text" | "research" | "url";
   path: string;
   name: string;
   isDirectory: boolean;
   textContent?: string;    // For type="text" (user pasted) and type="research" (synthesized)
   researchQuery?: string;  // For type="research" (original search query)
+  sourceUrl?: string;      // For type="url" (original URL)
 }
 
 export interface DocChatMessage {
