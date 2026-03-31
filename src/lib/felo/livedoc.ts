@@ -9,21 +9,21 @@ import type {
 
 export const feloLiveDoc = {
   async list(): Promise<FeloLiveDoc[]> {
-    const res = await feloFetch<FeloLiveDocListResponse>("/v2/live_docs", {
+    const res = await feloFetch<FeloLiveDocListResponse>("/v2/livedocs", {
       method: "GET",
     });
     return res.data?.items || [];
   },
 
   async create(name: string, description?: string): Promise<FeloLiveDoc> {
-    const res = await feloFetch<FeloLiveDocCreateResponse>("/v2/live_docs", {
+    const res = await feloFetch<FeloLiveDocCreateResponse>("/v2/livedocs", {
       body: { name, description: description || "" },
     });
     return res.data;
   },
 
   async delete(shortId: string): Promise<void> {
-    await feloFetch(`/v2/live_docs/${shortId}`, { method: "DELETE" });
+    await feloFetch(`/v2/livedocs/${shortId}`, { method: "DELETE" });
   },
 
   async getOrCreate(name = "CycloneOS Workspace"): Promise<FeloLiveDoc> {
