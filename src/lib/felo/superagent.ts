@@ -17,7 +17,7 @@ import type {
 export async function feloSuperAgent(
   opts: FeloSuperAgentOptions,
 ): Promise<FeloSuperAgentResult> {
-  const { query, liveDocId, threadId, skillId, acceptLanguage = "zh" } = opts;
+  const { query, liveDocId, threadId, skillId, acceptLanguage = "zh-TW" } = opts;
   const apiKey = getApiKey();
 
   const isFollowUp = !!threadId;

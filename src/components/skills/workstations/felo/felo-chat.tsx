@@ -21,6 +21,7 @@ export function FeloChat() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const isComposingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addOutput, setLiveDocId, liveDocId } = useFeloOutputStore();
 
@@ -195,7 +196,14 @@ export function FeloChat() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage(input)}
+            onCompositionStart={() => { isComposingRef.current = true; }}
+            onCompositionEnd={() => { isComposingRef.current = false; }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !isComposingRef.current) {
+                e.preventDefault();
+                sendMessage(input);
+              }
+            }}
             placeholder="輸入訊息..."
             disabled={isStreaming}
             className="flex-1 rounded-lg border border-cy-border bg-cy-input/50 px-3 py-2 text-sm text-cy-text placeholder:text-cy-muted/50 focus:border-purple-500/50 focus:outline-none disabled:opacity-50"
