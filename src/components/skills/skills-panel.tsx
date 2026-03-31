@@ -8,6 +8,7 @@ import { SkillSearch } from "./skill-search";
 import { WorkstationPlaceholder } from "./workstations/workstation-placeholder";
 import { DocumentsWorkstation } from "./workstations/documents/documents-workstation";
 import { PresentationsWorkstation } from "./workstations/presentations/presentations-workstation";
+import { FeloWorkstation } from "./workstations/felo/felo-workstation";
 
 export function SkillsPanel() {
   const { activeWorkstation, setActiveWorkstation } = useAppStore();
@@ -49,6 +50,9 @@ export function SkillsPanel() {
     }
     if (activeWorkstation === "presentations") {
       return <PresentationsWorkstation />;
+    }
+    if (activeWorkstation === "felo") {
+      return <FeloWorkstation />;
     }
     return <WorkstationPlaceholder skill={skill} />;
   }
