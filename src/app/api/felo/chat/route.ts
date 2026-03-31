@@ -14,11 +14,77 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const IMAGES_DIR = join(process.cwd(), "public/uploads/felo/images");
-const MAX_RECONNECTS = 5;
+const MAX_RECONNECTS = 3;
 const RECONNECT_DELAY = 2000;
+const IMAGE_POLL_INTERVAL = 3000;
+const IMAGE_POLL_MAX = 20; // 20 * 3s = 60s max wait
 
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Poll LiveDoc resource until image is ready, then download */
+async function pollAndDownloadImage(
+  apiKey: string,
+  liveDocId: string,
+  resourceId: string,
+  title: string,
+): Promise<{ localPath: string; title: string } | null> {
+  for (let i = 0; i < IMAGE_POLL_MAX; i++) {
+    await sleep(IMAGE_POLL_INTERVAL);
+
+    try {
+      const res = await fetch(
+        `${FELO_BASE_URL}/v2/livedocs/${liveDocId}/resources/${resourceId}`,
+        { headers: { Authorization: `Bearer ${apiKey}` } },
+      );
+      if (!res.ok) continue;
+
+      const json = await res.json();
+      const resource = json.data;
+      console.log(`[felo-chat] poll image ${resourceId}: status=${resource?.status}`);
+
+      if (resource?.status === "completed" || resource?.status === "ready") {
+        // Get download URL
+        const dlRes = await fetch(
+          `${FELO_BASE_URL}/v2/livedocs/${liveDocId}/resources/${resourceId}/download`,
+          {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            redirect: "follow",
+          },
+        );
+
+        if (dlRes.ok) {
+          const imgBuf = Buffer.from(await dlRes.arrayBuffer());
+          await mkdir(IMAGES_DIR, { recursive: true });
+          const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
+          await writeFile(join(IMAGES_DIR, fname), imgBuf);
+          const localPath = `/uploads/felo/images/${fname}`;
+          console.log("[felo-chat] image downloaded via poll:", localPath);
+          return { localPath, title };
+        }
+
+        // If download redirect, try the URL from resource
+        if (resource.thumbnail || resource.url) {
+          const imgUrl = resource.thumbnail || resource.url;
+          const imgRes = await fetch(imgUrl);
+          if (imgRes.ok) {
+            const imgBuf = Buffer.from(await imgRes.arrayBuffer());
+            await mkdir(IMAGES_DIR, { recursive: true });
+            const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
+            await writeFile(join(IMAGES_DIR, fname), imgBuf);
+            const localPath = `/uploads/felo/images/${fname}`;
+            console.log("[felo-chat] image downloaded via thumbnail:", localPath);
+            return { localPath, title };
+          }
+        }
+      }
+    } catch (e) {
+      console.log("[felo-chat] poll error:", e);
+    }
+  }
+  console.log("[felo-chat] image poll timeout for", resourceId);
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -101,6 +167,9 @@ export async function POST(req: NextRequest) {
           threadId: resultThreadId,
           liveDocId: resultLiveDocId,
         });
+
+        // Track pending image resources to poll after stream ends
+        const pendingImages: Array<{ resourceId: string; title: string }> = [];
 
         let lastOffset = -1;
         let reconnects = 0;
@@ -209,11 +278,18 @@ export async function POST(req: NextRequest) {
                       const toolName = tool.tool_name || "";
 
                       if (toolName === "generate_images") {
-                        // Check each image result
                         const results = tool.call_result || tool.images || [];
                         for (const img of results) {
+                          // Collect resource_id for polling later
+                          if (img.resource_id && img.status === "initialized") {
+                            pendingImages.push({ resourceId: img.resource_id, title: img.title || "" });
+                            console.log("[felo-chat] tracked pending image:", img.resource_id);
+                          }
+                          if (img.status === "generating") {
+                            emit("message", { content: `_🎨 圖片生成中..._\n` });
+                          }
+                          // If completed with URL in stream (unlikely but handle it)
                           if (img.status === "completed" && img.url) {
-                            // Image ready — download it
                             try {
                               await mkdir(IMAGES_DIR, { recursive: true });
                               const imgRes = await fetch(img.url);
@@ -222,18 +298,14 @@ export async function POST(req: NextRequest) {
                                 const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
                                 await writeFile(join(IMAGES_DIR, fname), imgBuf);
                                 const localPath = `/uploads/felo/images/${fname}`;
-                                emit("tool-result", {
-                                  toolName: "generate_images",
-                                  title: img.title,
-                                  localPaths: [localPath],
-                                });
-                                console.log("[felo-chat] image downloaded:", localPath);
+                                emit("tool-result", { toolName: "generate_images", title: img.title, localPaths: [localPath] });
+                                // Remove from pending
+                                const idx = pendingImages.findIndex(p => p.resourceId === img.resource_id);
+                                if (idx >= 0) pendingImages.splice(idx, 1);
                               }
                             } catch (dlErr) {
-                              console.log("[felo-chat] image download failed:", dlErr);
+                              console.log("[felo-chat] stream image download failed:", dlErr);
                             }
-                          } else if (img.status === "generating") {
-                            emit("message", { content: `_🎨 圖片生成中..._\n` });
                           }
                         }
                       }
@@ -278,6 +350,30 @@ export async function POST(req: NextRequest) {
             if (reconnects <= MAX_RECONNECTS) {
               console.log(`[felo-chat] reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnects})`);
               await sleep(RECONNECT_DELAY);
+            }
+          }
+        }
+
+        // After stream ends, poll for any pending images
+        if (pendingImages.length > 0) {
+          console.log(`[felo-chat] polling ${pendingImages.length} pending image(s)...`);
+          emit("message", { content: `_⏳ 等待圖片生成完成..._\n` });
+
+          for (const pending of pendingImages) {
+            const result = await pollAndDownloadImage(
+              apiKey,
+              resultLiveDocId,
+              pending.resourceId,
+              pending.title,
+            );
+            if (result) {
+              emit("tool-result", {
+                toolName: "generate_images",
+                title: result.title,
+                localPaths: [result.localPath],
+              });
+            } else {
+              emit("message", { content: `_❌ 圖片生成逾時：${pending.title}_\n` });
             }
           }
         }
