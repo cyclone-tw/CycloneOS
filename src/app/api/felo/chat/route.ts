@@ -1,4 +1,8 @@
 // src/app/api/felo/chat/route.ts
+//
+// Felo SuperAgent SSE proxy: creates/resumes conversations,
+// consumes Felo's double-encoded SSE stream, downloads generated images,
+// and re-emits clean SSE events to the frontend.
 
 import { NextRequest } from "next/server";
 import { getApiKey, FELO_BASE_URL } from "@/lib/felo/client";
@@ -107,6 +111,7 @@ export async function POST(req: NextRequest) {
         });
 
         let buffer = "";
+        let lastOffset = -1;
 
         try {
           while (true) {
@@ -118,25 +123,96 @@ export async function POST(req: NextRequest) {
             buffer = lines.pop() || "";
 
             for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6).trim();
-                if (!data || data === "[DONE]") continue;
+              // Felo SSE format: data:{"is_complete":...,"content":"<inner-json-string>","offset":N}
+              // Also: data: {"message":"stream error"} for errors
+              const dataPrefix = line.startsWith("data:") ? "data:" : line.startsWith("data: ") ? "data: " : null;
+              if (!dataPrefix) continue;
 
-                try {
-                  const parsed = JSON.parse(data);
+              const raw = line.slice(dataPrefix.length).trim();
+              if (!raw || raw === "[DONE]") continue;
 
-                  if (parsed.content) {
-                    emit("message", { content: parsed.content });
+              let outer;
+              try {
+                outer = JSON.parse(raw);
+              } catch {
+                console.log("[felo-chat] non-JSON data:", raw.slice(0, 200));
+                continue;
+              }
+
+              // Skip duplicate offsets
+              if (typeof outer.offset === "number") {
+                if (outer.offset <= lastOffset) continue;
+                lastOffset = outer.offset;
+              }
+
+              // Error events
+              if (outer.message && !outer.content) {
+                console.log("[felo-chat] error event:", outer.message);
+                // Don't emit as fatal error — Felo sometimes sends non-fatal error events
+                continue;
+              }
+
+              // The real content is double-encoded: outer.content is a JSON string
+              if (!outer.content) continue;
+
+              let inner;
+              try {
+                inner = JSON.parse(outer.content);
+              } catch {
+                // Content is plain text, not JSON
+                emit("message", { content: outer.content });
+                continue;
+              }
+
+              const innerType = inner.type;
+              const innerData = inner.data || {};
+
+              console.log("[felo-chat] inner type:", innerType, "keys:", Object.keys(innerData).join(","));
+
+              switch (innerType) {
+                case "answer":
+                case "text": {
+                  // Streaming text content
+                  if (innerData.text) {
+                    emit("message", { content: innerData.text });
+                  } else if (innerData.content) {
+                    emit("message", { content: innerData.content });
                   }
+                  break;
+                }
 
-                  if (parsed.tool_name || parsed.toolName) {
-                    const toolName = parsed.tool_name || parsed.toolName;
+                case "processing": {
+                  // Status update — show to user
+                  if (innerData.message) {
+                    emit("message", { content: `_${innerData.message}_\n` });
+                  }
+                  break;
+                }
 
-                    if (toolName === "generate_images") {
-                      const urls = parsed.urls || (parsed.images || []).map(
-                        (img: { url?: string }) => img.url,
-                      ).filter(Boolean);
+                case "tool_call":
+                case "tool_result": {
+                  const toolName = innerData.tool_name || innerData.name || "";
+                  console.log("[felo-chat] tool:", toolName, JSON.stringify(innerData).slice(0, 500));
 
+                  if (toolName === "generate_images") {
+                    // Extract image URLs from various possible formats
+                    const urls: string[] = [];
+                    if (innerData.urls) urls.push(...innerData.urls);
+                    if (innerData.images) {
+                      for (const img of innerData.images) {
+                        if (typeof img === "string") urls.push(img);
+                        else if (img?.url) urls.push(img.url);
+                      }
+                    }
+                    if (innerData.result?.urls) urls.push(...innerData.result.urls);
+                    if (innerData.result?.images) {
+                      for (const img of innerData.result.images) {
+                        if (typeof img === "string") urls.push(img);
+                        else if (img?.url) urls.push(img.url);
+                      }
+                    }
+
+                    if (urls.length > 0) {
                       const localPaths: string[] = [];
                       await mkdir(IMAGES_DIR, { recursive: true });
 
@@ -149,33 +225,64 @@ export async function POST(req: NextRequest) {
                             await writeFile(join(IMAGES_DIR, fname), imgBuf);
                             localPaths.push(`/uploads/felo/images/${fname}`);
                           }
-                        } catch {
-                          // Skip failed downloads
+                        } catch (dlErr) {
+                          console.log("[felo-chat] image download failed:", imgUrl, dlErr);
                         }
                       }
 
-                      emit("tool-result", {
-                        toolName,
-                        title: parsed.title,
-                        localPaths,
-                      });
+                      emit("tool-result", { toolName, title: innerData.title, localPaths });
                     } else {
-                      emit("tool-result", {
-                        toolName,
-                        title: parsed.title,
-                        status: parsed.status,
-                      });
+                      emit("tool-result", { toolName, title: innerData.title, status: "processing" });
                     }
+                  } else {
+                    emit("tool-result", {
+                      toolName,
+                      title: innerData.title,
+                      status: innerData.status || "done",
+                    });
                   }
-                } catch {
-                  if (data && !data.startsWith("{")) {
-                    emit("message", { content: data });
-                  }
+                  break;
                 }
+
+                case "message": {
+                  // Echo of user message — skip
+                  break;
+                }
+
+                case "start":
+                case "connected":
+                case "heartbeat": {
+                  // Control events — skip
+                  break;
+                }
+
+                case "done":
+                case "completed":
+                case "complete": {
+                  // Stream finished
+                  break;
+                }
+
+                default: {
+                  // Unknown type — log and try to extract text
+                  console.log("[felo-chat] unknown type:", innerType, JSON.stringify(inner).slice(0, 300));
+                  if (innerData.text) {
+                    emit("message", { content: innerData.text });
+                  } else if (innerData.content) {
+                    emit("message", { content: innerData.content });
+                  }
+                  break;
+                }
+              }
+
+              // Check if stream is complete
+              if (outer.is_complete) {
+                break;
               }
             }
           }
         } catch (e) {
+          console.error("[felo-chat] stream error:", e);
           emit("error", {
             message: e instanceof Error ? e.message : "Stream error",
           });
