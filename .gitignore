@@ -45,3 +45,6 @@ next-env.d.ts
 
 # superpowers brainstorming
 .superpowers/
+
+# uploaded files (symlink to Google Drive)
+public/uploads/
