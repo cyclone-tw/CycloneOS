@@ -10,8 +10,8 @@ import { ThemePicker } from "./theme-picker";
 
 type ActivePanel = null | "paste" | "research";
 
-const OBSIDIAN_RESEARCH_PATH =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone/Draco/research/";
+const OUTPUTS_PATH =
+  "~/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone/CycloneOS";
 
 export function PresentationsSourcePanel() {
   const {
@@ -382,7 +382,7 @@ export function PresentationsSourcePanel() {
         open={importResearchOpen}
         onClose={() => setImportResearchOpen(false)}
         onAddSources={addSources}
-        initialPath={OBSIDIAN_RESEARCH_PATH}
+        initialPath={OUTPUTS_PATH}
         initialTab="local"
         sourceTypeOverride="obsidian"
       />
