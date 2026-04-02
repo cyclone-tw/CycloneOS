@@ -1,5 +1,10 @@
 # CycloneOS Changelog
 
+## 2026-04-03
+- 移除所有 /Users/username 硬編碼路徑，改用 homedir()/process.cwd()/PATHS — 系統可移植到其他 Mac
+- Documents 輸出路徑 UI 改善：分別顯示 MD（Obsidian）與二進位檔（Google Drive）存放位置
+- 匯入研究路徑改指向 Obsidian CycloneOS 目錄（outputs、sessions、meeting-notes 等）
+
 ## 2026-04-02
 - Felo 聊天訊息改用 ReactMarkdown 渲染（支援 GFM、程式碼高亮）
 - Felo 進度訊息改用獨立 SSE status 事件 + spinner 灰字顯示
