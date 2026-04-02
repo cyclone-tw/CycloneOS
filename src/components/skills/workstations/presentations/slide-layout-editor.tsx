@@ -45,6 +45,7 @@ function SlideGenerationButtons({ slide }: { slide: SlideDefinition }) {
 
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
+  const [loadingGenImage, setLoadingGenImage] = useState(false);
 
   const presentationTitle =
     getActiveSession()?.outline?.title || "Untitled Presentation";
@@ -91,6 +92,35 @@ function SlideGenerationButtons({ slide }: { slide: SlideDefinition }) {
     },
     [slide.id, slide.content, presentationTitle, updateSlideField, updateSlideContent],
   );
+
+  const handleGenerateImage = useCallback(async () => {
+    const prompt = slide.content.imagePrompt?.trim();
+    if (!prompt) return;
+    setLoadingGenImage(true);
+
+    try {
+      const res = await fetch("/api/presentations/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imagePrompt: prompt }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        console.error("[GenerateImage]", err.error);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.localPath) {
+        updateSlideContent(slide.id, { backgroundImage: data.localPath });
+      }
+    } catch (e) {
+      console.error("[GenerateImage] fetch failed:", e);
+    } finally {
+      setLoadingGenImage(false);
+    }
+  }, [slide.id, slide.content.imagePrompt, updateSlideContent]);
 
   return (
     <div className="space-y-3">
@@ -141,6 +171,18 @@ function SlideGenerationButtons({ slide }: { slide: SlideDefinition }) {
             className="mt-1.5 w-full rounded-md bg-cy-input/30 border border-cy-border px-2 py-1.5 text-xs text-cy-text placeholder:text-cy-muted/50 resize-y"
             placeholder="Image prompt..."
           />
+        )}
+        {hasImagePrompt && (
+          <button
+            onClick={handleGenerateImage}
+            disabled={loadingGenImage}
+            className="mt-1.5 w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium bg-purple-600/80 hover:bg-purple-600 text-white border border-purple-500/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingGenImage ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : null}
+            {loadingGenImage ? "生圖中..." : "🎨 用此提示生圖"}
+          </button>
         )}
       </div>
     </div>

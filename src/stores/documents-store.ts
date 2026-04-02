@@ -1,17 +1,18 @@
 // dashboard/src/stores/documents-store.ts
 import { create } from "zustand";
 
-export type OutputFormat = "md" | "docx" | "pdf" | "html-slides" | "pptx" | "xlsx";
+export type OutputFormat = "md" | "docx" | "pdf" | "xlsx";
 export type SessionStatus = "configuring" | "processing" | "completed";
 
 export interface SourceItem {
   id: string;
-  type: "local" | "drive" | "notion" | "obsidian" | "text" | "research";
+  type: "local" | "drive" | "notion" | "obsidian" | "text" | "research" | "url";
   path: string;
   name: string;
   isDirectory: boolean;
   textContent?: string;    // For type="text" (user pasted) and type="research" (synthesized)
   researchQuery?: string;  // For type="research" (original search query)
+  sourceUrl?: string;      // For type="url" (original URL)
 }
 
 export interface DocChatMessage {
@@ -60,7 +61,7 @@ function createSession(): DocumentSession {
     createdAt: Date.now(),
     sources: [],
     outputFormats: ["md"],
-    outputPath: "~/Desktop",
+    outputPath: "~/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/CycloneOS/documents",
     outputContent: "",
     chatHistory: [],
     claudeSessionId: null,

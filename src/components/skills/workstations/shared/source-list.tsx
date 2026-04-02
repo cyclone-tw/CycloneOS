@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus, X, FileText, Folder, HardDrive, Cloud, BookOpen, Archive, Type, Search } from "lucide-react";
+import { Plus, X, FileText, Folder, HardDrive, Cloud, BookOpen, Archive, Type, Search, Link } from "lucide-react";
 import { type SourceItem } from "@/stores/documents-store";
 import { SharedSourcePickerModal } from "./source-picker-modal";
 
@@ -12,6 +12,7 @@ const SOURCE_TYPE_ICON: Record<SourceItem["type"], React.ReactNode> = {
   obsidian: <Archive className="h-3 w-3" />,
   text: <Type className="h-3 w-3" />,
   research: <Search className="h-3 w-3" />,
+  url: <Link className="h-3 w-3" />,
 };
 
 interface SharedSourceListProps {

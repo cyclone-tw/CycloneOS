@@ -6,11 +6,9 @@ import { useDocumentsStore, type OutputFormat } from "@/stores/documents-store";
 
 const FORMAT_OPTIONS: { value: OutputFormat; label: string; enabled: boolean }[] = [
   { value: "md", label: "Markdown (.md)", enabled: true },
-  { value: "docx", label: "DOCX (.docx)", enabled: false },
-  { value: "pdf", label: "PDF (.pdf)", enabled: false },
-  { value: "html-slides", label: "HTML 簡報", enabled: true },
-  { value: "pptx", label: "PPTX (.pptx)", enabled: false },
-  { value: "xlsx", label: "Excel (.xlsx)", enabled: false },
+  { value: "docx", label: "DOCX (.docx)", enabled: true },
+  { value: "pdf", label: "PDF (.pdf)", enabled: true },
+  { value: "xlsx", label: "Excel (.xlsx)", enabled: true },
 ];
 
 interface BrowseItem {

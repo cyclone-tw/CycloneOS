@@ -28,6 +28,14 @@ export const SKILLS: SkillCard[] = [
     tags: ["簡報", "reveal.js", "Canva", "Felo", "投影片"],
   },
   {
+    id: "felo",
+    name: "Felo AI 工作站",
+    description: "AI 生圖・Web 擷取・Deep Research・Logo 設計・通用對話",
+    icon: "🤖",
+    type: "workstation",
+    tags: ["Felo", "AI", "生圖", "Research", "SuperAgent", "Web Fetch"],
+  },
+  {
     id: "gov-doc",
     name: "公文處理工作站",
     description: "公文掃描→AI分析→分類歸檔→進階管理",
