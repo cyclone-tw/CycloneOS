@@ -21,6 +21,80 @@ CycloneOS 的所有程式碼、架構、介面設計，**必須確保任何 AI A
 
 ---
 
+## 🔜 Next Session: Felo 收尾 + UI 改善 + Computer Use Phase 1
+
+> 複製以下內容作為新 session 的第一句話，然後刪除此區塊。
+
+```
+這是 CycloneOS 獨立 Dashboard repo。上個 session（2026-04-02 #1）完成了 Felo 全面整合。
+
+## 已完成
+
+### Felo AI 工作站
+- lib/felo/ API client（search, superagent, web-fetch, livedoc）
+- Felo Workstation skill 卡片（混合式：對話 + 快捷入口 + 產出面板）
+- SuperAgent SSE 雙重 JSON 解碼 + 自動重連 + LiveDoc image polling
+- 對話匯出按鈕（MD/DOCX/XLSX + 自訂指令由 Claude Code 處理）
+- felo-output-store（Zustand + localStorage persist）
+
+### Presentations 增強
+- 串接式生圖 UI（生成圖片提示 → 編輯 → 用此提示生圖）
+- URL 智慧偵測（source panel 貼 URL 自動提示擷取）
+- research route 改用 lib/felo/search
+- push-github 改用 cyclone-tw/slides repo
+
+### Documents 工作站
+- 實作 DOCX、PDF（print HTML）、XLSX 輸出
+- 移除 HTML 簡報和 PPTX 選項
+
+### 系統架構
+- paths-config.ts 統一管理所有輸出路徑
+- MD 統一存 Obsidian（CycloneOS/outputs/），二進位存 Google Drive
+- 檔名規則：YYYY-MM-DD-{source}-{summary}.{ext}
+- AI Agent 無關性原則寫入 CLAUDE.md
+- IME 注音輸入法相容
+
+### 設計文件
+- Felo 整合 spec：docs/superpowers/specs/2026-03-31-felo-integration-design.md
+- Computer Use spec：docs/superpowers/specs/2026-03-31-computer-use-design.md
+
+## 待辦事項（按優先順序）
+
+### 1. Felo 收尾
+- Felo chat 訊息用 react-markdown 渲染（目前是純 whitespace-pre-wrap）
+- 進度訊息改善（`_處理中..._` 用 spinner 或灰色小字取代斜體）
+- paths-config.ts 清理殘留的 webFetch 路徑定義（已不使用）
+- 測試 Felo 匯出的 DOCX/XLSX 實際檔案品質
+
+### 2. 簡報工作站 UI
+- push-github 前端加 folderName 輸入框（後端已支援，前端還沒有）
+- 簡報 push 後顯示 GitHub Pages URL
+
+### 3. Computer Use Phase 1（設計文件已寫好）
+- 建立 cycloneos-agent/ 獨立 Node.js 專案
+- 實作截圖模組（screencapture / screenshot-desktop）
+- 實作滑鼠鍵盤控制（@nut-tree/nut-js）
+- 實作 Claude API 橋接（computer-use-2025-01-24 tool）
+- WebSocket server 與 CycloneOS 通訊
+- 先做 CLI 版本，能在終端機直接操控
+
+### 4. 全域改善
+- 全域 toast/notification 系統（取代各元件的 alert）
+- 統一錯誤處理 middleware
+
+## 相關檔案
+- src/config/paths-config.ts — 統一路徑管理
+- src/lib/felo/ — Felo API client
+- src/app/api/felo/chat/route.ts — Felo SSE chat（最複雜的 route）
+- src/components/skills/workstations/felo/ — Felo Workstation UI
+- src/lib/document-converters.ts — DOCX/PDF/XLSX 轉換器
+- docs/superpowers/specs/2026-03-31-computer-use-design.md — Computer Use 架構
+
+先從待辦 1（Felo 收尾）開始，快速修完 UI 問題後進入 Computer Use。
+```
+
+---
+
 ## Handoff Prompt Protocol (MANDATORY)
 
 當使用者要求結束 session 並提供下一次工作的 handoff prompt 時：
