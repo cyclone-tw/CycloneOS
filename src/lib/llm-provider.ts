@@ -5,6 +5,7 @@
 // Future: AnthropicSDKProvider, OpenAIProvider, etc.
 
 import { spawn, type ChildProcess } from "child_process";
+import { PATHS } from "@/config/paths-config";
 
 // --- Types ---
 
@@ -42,9 +43,8 @@ export interface LLMProvider {
 
 // --- Claude CLI Provider ---
 
-const CWD = "/Users/username/CycloneOpenClaw";
-const VAULT =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const CWD = process.cwd();
+const VAULT = PATHS.obsidianVault;
 
 export class ClaudeCLIProvider implements LLMProvider {
   async *stream(options: LLMRequestOptions): AsyncGenerator<LLMStreamEvent> {

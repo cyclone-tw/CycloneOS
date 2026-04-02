@@ -1,7 +1,7 @@
 import type { AgentDefinition } from "./types";
+import { PATHS } from "@/config/paths-config";
 
-const VAULT =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const VAULT = PATHS.obsidianVault;
 
 export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
   researcher: {
@@ -58,7 +58,7 @@ Obsidian vault 路徑已透過 --add-dir 提供，可搜尋使用者的筆記。
     icon: "Code",
     color: "text-amber-400",
     systemPrompt: `你是 CycloneOS 的程式開發助理。
-工作目錄是 /Users/username/CycloneOpenClaw。
+工作目錄是 ${process.cwd()}。
 遵循 CLAUDE.md 中的專案規範。`,
     model: "sonnet",
     permissionMode: "acceptEdits",

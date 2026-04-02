@@ -1,8 +1,8 @@
 import { readdir } from "fs/promises";
 import path from "path";
+import { PATHS } from "@/config/paths-config";
 
-const VAULT_PATH =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const VAULT_PATH = PATHS.obsidianVault;
 const CRON_DIR = path.join(VAULT_PATH, "Draco", "cron");
 
 export interface CronOutput {

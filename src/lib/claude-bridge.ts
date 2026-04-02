@@ -1,9 +1,9 @@
 import { spawn, type ChildProcess } from "child_process";
 import type { PermissionMode } from "@/types/chat";
+import { PATHS } from "@/config/paths-config";
 
-const CWD = "/Users/username/CycloneOpenClaw";
-const VAULT =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const CWD = process.cwd();
+const VAULT = PATHS.obsidianVault;
 
 export interface ClaudeBridgeOptions {
   prompt: string;

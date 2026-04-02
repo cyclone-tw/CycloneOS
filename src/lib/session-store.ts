@@ -2,8 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 
-// Use absolute path to avoid process.cwd() ambiguity
-const DASHBOARD_ROOT = path.resolve("/Users/username/CycloneOpenClaw/dashboard");
+const DASHBOARD_ROOT = path.resolve(process.cwd());
 const DATA_DIR = path.join(DASHBOARD_ROOT, ".data");
 const DB_PATH = path.join(DATA_DIR, "sessions.db");
 

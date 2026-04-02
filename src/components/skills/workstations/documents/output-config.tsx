@@ -162,11 +162,22 @@ function OutputPathPicker({
   );
 }
 
+const MD_PATH_DISPLAY = "Obsidian/CycloneOS/outputs";
+
 export function OutputConfig() {
   const { currentSession, toggleFormat, setOutputPath } = useDocumentsStore();
   const formats = currentSession?.outputFormats ?? [];
   const outputPath = currentSession?.outputPath ?? "~/Desktop";
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  const hasMd = formats.includes("md");
+  const hasBinary = formats.some((f) => f !== "md");
+
+  // Shorten display path for readability
+  const shortPath = outputPath.replace(
+    /^~\/Library\/CloudStorage\/GoogleDrive-[^/]+\/我的雲端硬碟\//,
+    "GDrive/"
+  );
 
   return (
     <div className="space-y-3">
@@ -194,17 +205,27 @@ export function OutputConfig() {
         ))}
       </div>
 
-      {/* Output path — clickable to browse */}
-      <div className="space-y-1">
+      {/* Output paths — show where each type goes */}
+      <div className="space-y-1.5">
         <label className="text-xs text-cy-muted">存放路徑</label>
-        <button
-          onClick={() => setPickerOpen(true)}
-          className="flex w-full items-center gap-2 rounded-md bg-cy-input/50 px-2.5 py-2 text-left text-sm text-cy-text hover:bg-cy-input/70 transition-colors"
-        >
-          <FolderOpen className="h-3.5 w-3.5 shrink-0 text-cy-accent" />
-          <span className="flex-1 truncate">{outputPath}</span>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-cy-muted/50" />
-        </button>
+
+        {hasMd && (
+          <div className="flex items-center gap-2 rounded-md bg-cy-input/30 px-2.5 py-1.5 text-xs text-cy-muted">
+            <FolderOpen className="h-3 w-3 shrink-0 text-green-400/70" />
+            <span className="flex-1 truncate">.md → {MD_PATH_DISPLAY}</span>
+          </div>
+        )}
+
+        {hasBinary && (
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="flex w-full items-center gap-2 rounded-md bg-cy-input/50 px-2.5 py-1.5 text-left text-xs text-cy-text hover:bg-cy-input/70 transition-colors"
+          >
+            <FolderOpen className="h-3 w-3 shrink-0 text-cy-accent" />
+            <span className="flex-1 truncate">DOCX/PDF/XLSX → {shortPath}</span>
+            <ChevronRight className="h-3 w-3 shrink-0 text-cy-muted/50" />
+          </button>
+        )}
       </div>
 
       {/* Path picker modal */}

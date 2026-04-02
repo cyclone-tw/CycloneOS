@@ -1,8 +1,8 @@
 import { readdir, readFile } from "fs/promises";
 import path from "path";
+import { PATHS } from "@/config/paths-config";
 
-const VAULT_PATH =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const VAULT_PATH = PATHS.obsidianVault;
 
 const SESSION_DIRS = [
   { dir: path.join(VAULT_PATH, "CycloneOS", "sessions"), source: "cycloneos" },

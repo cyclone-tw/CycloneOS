@@ -3,13 +3,13 @@ import { execSync } from "child_process";
 import { readdir } from "fs/promises";
 import path from "path";
 import { getRecentSessions } from "@/lib/session-reader";
+import { PATHS } from "@/config/paths-config";
 
 export const dynamic = "force-dynamic";
 
 const REPO_ROOT = path.resolve(process.cwd(), "..");
 
-const VAULT_PATH =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const VAULT_PATH = PATHS.obsidianVault;
 
 const CRON_DIRS = [
   { dir: path.join(VAULT_PATH, "Draco/cron/daily-info"), skill: "daily-info" },

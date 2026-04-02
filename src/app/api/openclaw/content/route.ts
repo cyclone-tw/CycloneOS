@@ -1,11 +1,11 @@
 import { type NextRequest } from "next/server";
 import { readFile } from "fs/promises";
+import { PATHS } from "@/config/paths-config";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const VAULT_PATH =
-  "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone";
+const VAULT_PATH = PATHS.obsidianVault;
 const ALLOWED_PREFIX = `${VAULT_PATH}/Draco/cron/`;
 
 export async function GET(request: NextRequest) {
