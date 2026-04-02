@@ -9,11 +9,10 @@ import { getApiKey, FELO_BASE_URL } from "@/lib/felo/client";
 import { feloLiveDoc } from "@/lib/felo/livedoc";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { PATHS } from "@/config/paths-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const IMAGES_DIR = join(process.cwd(), "public/uploads/felo/images");
 const MAX_RECONNECTS = 3;
 const RECONNECT_DELAY = 2000;
 const IMAGE_POLL_INTERVAL = 3000;
@@ -56,9 +55,9 @@ async function pollAndDownloadImage(
 
         if (dlRes.ok) {
           const imgBuf = Buffer.from(await dlRes.arrayBuffer());
-          await mkdir(IMAGES_DIR, { recursive: true });
+          await mkdir(PATHS.feloImages, { recursive: true });
           const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
-          await writeFile(join(IMAGES_DIR, fname), imgBuf);
+          await writeFile(join(PATHS.feloImages, fname), imgBuf);
           const localPath = `/uploads/felo/images/${fname}`;
           console.log("[felo-chat] image downloaded via poll:", localPath);
           return { localPath, title };
@@ -70,9 +69,9 @@ async function pollAndDownloadImage(
           const imgRes = await fetch(imgUrl);
           if (imgRes.ok) {
             const imgBuf = Buffer.from(await imgRes.arrayBuffer());
-            await mkdir(IMAGES_DIR, { recursive: true });
+            await mkdir(PATHS.feloImages, { recursive: true });
             const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
-            await writeFile(join(IMAGES_DIR, fname), imgBuf);
+            await writeFile(join(PATHS.feloImages, fname), imgBuf);
             const localPath = `/uploads/felo/images/${fname}`;
             console.log("[felo-chat] image downloaded via thumbnail:", localPath);
             return { localPath, title };
@@ -291,12 +290,12 @@ export async function POST(req: NextRequest) {
                           // If completed with URL in stream (unlikely but handle it)
                           if (img.status === "completed" && img.url) {
                             try {
-                              await mkdir(IMAGES_DIR, { recursive: true });
+                              await mkdir(PATHS.feloImages, { recursive: true });
                               const imgRes = await fetch(img.url);
                               if (imgRes.ok) {
                                 const imgBuf = Buffer.from(await imgRes.arrayBuffer());
                                 const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
-                                await writeFile(join(IMAGES_DIR, fname), imgBuf);
+                                await writeFile(join(PATHS.feloImages, fname), imgBuf);
                                 const localPath = `/uploads/felo/images/${fname}`;
                                 emit("tool-result", { toolName: "generate_images", title: img.title, localPaths: [localPath] });
                                 // Remove from pending

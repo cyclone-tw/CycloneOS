@@ -61,7 +61,7 @@ function createSession(): DocumentSession {
     createdAt: Date.now(),
     sources: [],
     outputFormats: ["md"],
-    outputPath: "~/Desktop",
+    outputPath: "~/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/CycloneOS/documents",
     outputContent: "",
     chatHistory: [],
     claudeSessionId: null,

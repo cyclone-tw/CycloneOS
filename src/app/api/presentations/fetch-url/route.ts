@@ -4,11 +4,10 @@ import { NextRequest } from "next/server";
 import { feloWebFetch } from "@/lib/felo/web-fetch";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { PATHS } from "@/config/paths-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const WEBFETCH_DIR = join(process.cwd(), "public/uploads/felo/web-fetch");
 
 export async function POST(req: NextRequest) {
   const { url } = await req.json();
@@ -41,8 +40,8 @@ export async function POST(req: NextRequest) {
     const slug = new URL(url).hostname.replace(/\./g, "-");
     const filename = `${slug}-${timestamp}.md`;
 
-    await mkdir(WEBFETCH_DIR, { recursive: true });
-    await writeFile(join(WEBFETCH_DIR, filename), content, "utf-8");
+    await mkdir(PATHS.feloWebFetch, { recursive: true });
+    await writeFile(join(PATHS.feloWebFetch, filename), content, "utf-8");
 
     const localPath = `/uploads/felo/web-fetch/${filename}`;
 

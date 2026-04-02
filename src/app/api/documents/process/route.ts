@@ -6,18 +6,13 @@
 import { NextRequest } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join, resolve } from "path";
-import { homedir } from "os";
 import { cleanClaudeOutput } from "@/lib/documents-utils";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { markdownToDocx, markdownToPdfHtml, markdownToXlsx } from "@/lib/document-converters";
+import { PATHS, expandHome } from "@/config/paths-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function expandHome(p: string): string {
-  if (p.startsWith("~/") || p === "~") return join(homedir(), p.slice(1));
-  return p;
-}
 
 interface ProcessRequest {
   sources: Array<{ path: string; name: string; isDirectory: boolean }>;

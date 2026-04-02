@@ -1,66 +1,63 @@
-// dashboard/src/app/api/presentations/push-github/route.ts
+// src/app/api/presentations/push-github/route.ts
 import { mkdir, writeFile } from "fs/promises";
 import { execSync } from "child_process";
 import { join } from "path";
+import { homedir } from "os";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PRESENTATIONS_REPO = process.env.PRESENTATIONS_REPO || "CyclonePresentations";
-const PRESENTATIONS_DIR = process.env.PRESENTATIONS_DIR || join(process.env.HOME || "/tmp", "CyclonePresentations");
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fff]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
+const SLIDES_REPO = "cyclone-tw/slides";
+const SLIDES_DIR = join(homedir(), "slides-repo");
 
 export async function POST(request: Request) {
   try {
-    const { title, html, speakerNotes } = await request.json();
+    const { title, html, speakerNotes, folderName } = await request.json();
 
     if (!title || !html) {
       return Response.json({ error: "Missing title or html" }, { status: 400 });
     }
 
-    const date = new Date().toISOString().slice(0, 10);
-    const folderName = `${date}-${slugify(title)}`;
-    const folderPath = join(PRESENTATIONS_DIR, folderName);
+    // Use user-specified folder name, or fallback to slugified title
+    const folder = folderName?.trim() || slugify(title);
+    const folderPath = join(SLIDES_DIR, folder);
 
     // Ensure repo exists and is up to date
     try {
-      execSync(`git -C "${PRESENTATIONS_DIR}" rev-parse --git-dir`, { stdio: "pipe" });
-      execSync(`git -C "${PRESENTATIONS_DIR}" pull --rebase 2>/dev/null || true`, { stdio: "pipe" });
+      execSync(`git -C "${SLIDES_DIR}" rev-parse --git-dir`, { stdio: "pipe" });
+      execSync(`git -C "${SLIDES_DIR}" pull --rebase 2>/dev/null || true`, { stdio: "pipe" });
     } catch {
-      // Clone or init repo
       try {
-        execSync(`gh repo clone ${PRESENTATIONS_REPO} "${PRESENTATIONS_DIR}"`, { stdio: "pipe" });
+        execSync(`gh repo clone ${SLIDES_REPO} "${SLIDES_DIR}"`, { stdio: "pipe" });
       } catch {
-        await mkdir(PRESENTATIONS_DIR, { recursive: true });
-        execSync(`git -C "${PRESENTATIONS_DIR}" init`, { stdio: "pipe" });
-        execSync(`gh repo create ${PRESENTATIONS_REPO} --private --source="${PRESENTATIONS_DIR}" --push`, { stdio: "pipe" });
+        await mkdir(SLIDES_DIR, { recursive: true });
+        execSync(`git -C "${SLIDES_DIR}" init`, { stdio: "pipe" });
+        execSync(`gh repo create ${SLIDES_REPO} --public --source="${SLIDES_DIR}" --push`, { stdio: "pipe" });
       }
     }
 
-    // Create presentation folder and files
+    // Create presentation folder with index.html
     await mkdir(folderPath, { recursive: true });
     await writeFile(join(folderPath, "index.html"), html, "utf-8");
-    await writeFile(join(folderPath, "speaker-notes.md"), speakerNotes, "utf-8");
+    if (speakerNotes) {
+      await writeFile(join(folderPath, "speaker-notes.md"), speakerNotes, "utf-8");
+    }
 
     // Git add, commit, push
-    execSync(`git -C "${PRESENTATIONS_DIR}" add "${folderName}"`, { stdio: "pipe" });
+    execSync(`git -C "${SLIDES_DIR}" add "${folder}"`, { stdio: "pipe" });
     execSync(
-      `git -C "${PRESENTATIONS_DIR}" commit -m "add: ${title}"`,
+      `git -C "${SLIDES_DIR}" commit -m "Add ${folder} slide"`,
       { stdio: "pipe" },
     );
-    execSync(`git -C "${PRESENTATIONS_DIR}" push`, { stdio: "pipe" });
+    execSync(`git -C "${SLIDES_DIR}" push`, { stdio: "pipe" });
+
+    const pageUrl = `https://cyclone-tw.github.io/slides/${folder}/`;
 
     return Response.json({
       success: true,
-      path: folderName,
-      repo: PRESENTATIONS_REPO,
+      folder,
+      repo: SLIDES_REPO,
+      url: pageUrl,
     });
   } catch (e) {
     return Response.json(
@@ -68,4 +65,12 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fff]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
 }

@@ -5,11 +5,10 @@ import { feloLiveDoc } from "@/lib/felo/livedoc";
 import { feloSuperAgent, extractImageUrls } from "@/lib/felo/superagent";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { PATHS } from "@/config/paths-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const UPLOADS_DIR = join(process.cwd(), "public/uploads/felo/images");
 
 export async function POST(req: NextRequest) {
   const { imagePrompt } = await req.json();
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
     const timestamp = Date.now();
     const filename = `felo-img-${timestamp}.png`;
 
-    await mkdir(UPLOADS_DIR, { recursive: true });
+    await mkdir(PATHS.feloImages, { recursive: true });
 
     const imgRes = await fetch(imageUrl);
     if (!imgRes.ok) {
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-    const localFilePath = join(UPLOADS_DIR, filename);
+    const localFilePath = join(PATHS.feloImages, filename);
     await writeFile(localFilePath, imgBuffer);
 
     const localPath = `/uploads/felo/images/${filename}`;
