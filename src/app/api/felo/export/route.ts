@@ -1,0 +1,107 @@
+// src/app/api/felo/export/route.ts
+//
+// Export Felo chat content to file formats (MD, DOCX, XLSX).
+// Takes a message content + optional user instruction,
+// processes via LLM if needed, converts and saves.
+
+import { NextRequest } from "next/server";
+import { writeFile, mkdir } from "fs/promises";
+import { join, resolve } from "path";
+import { homedir } from "os";
+import { getLLMProvider } from "@/lib/llm-provider";
+import { markdownToDocx, markdownToXlsx } from "@/lib/document-converters";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function expandHome(p: string): string {
+  if (p.startsWith("~/") || p === "~") return join(homedir(), p.slice(1));
+  return p;
+}
+
+const DEFAULT_OUTPUT = "~/Desktop";
+
+export async function POST(req: NextRequest) {
+  const { content, format, instruction, outputPath } = await req.json();
+
+  if (!content || typeof content !== "string") {
+    return Response.json({ error: "content is required" }, { status: 400 });
+  }
+
+  if (!format || !["md", "docx", "xlsx"].includes(format)) {
+    return Response.json({ error: "format must be md, docx, or xlsx" }, { status: 400 });
+  }
+
+  const outDir = resolve(expandHome(outputPath || DEFAULT_OUTPUT));
+  const ts = Date.now();
+
+  try {
+    let processed = content;
+
+    // If user gave a custom instruction, let LLM process the content first
+    if (instruction && instruction.trim()) {
+      const provider = getLLMProvider();
+      const prompt = `以下是一段內容：
+
+<content>
+${content}
+</content>
+
+使用者的要求：${instruction}
+
+請根據使用者的要求處理上述內容，只輸出處理後的結果，不要加任何額外說明。用繁體中文。`;
+
+      let result = "";
+      for await (const event of provider.stream({
+        prompt,
+        model: "sonnet",
+        stdinPrompt: true,
+        noMcp: true,
+        noVault: true,
+      })) {
+        if (event.type === "text" && event.text) {
+          result += event.text;
+        }
+      }
+      processed = result.trim() || content;
+    }
+
+    await mkdir(outDir, { recursive: true });
+
+    let filePath: string;
+    let fileName: string;
+
+    switch (format) {
+      case "md": {
+        fileName = `felo-export-${ts}.md`;
+        filePath = join(outDir, fileName);
+        await writeFile(filePath, processed, "utf-8");
+        break;
+      }
+      case "docx": {
+        fileName = `felo-export-${ts}.docx`;
+        filePath = join(outDir, fileName);
+        const docxBuf = await markdownToDocx(processed);
+        await writeFile(filePath, docxBuf);
+        break;
+      }
+      case "xlsx": {
+        fileName = `felo-export-${ts}.xlsx`;
+        filePath = join(outDir, fileName);
+        const xlsxBuf = await markdownToXlsx(processed);
+        await writeFile(filePath, xlsxBuf);
+        break;
+      }
+      default:
+        return Response.json({ error: "Unknown format" }, { status: 400 });
+    }
+
+    return Response.json({ path: filePath, fileName, format });
+  } catch (e) {
+    console.error("[felo/export] error:", e);
+    return Response.json(
+      { error: e instanceof Error ? e.message : "Export failed" },
+      { status: 500 },
+    );
+  }
+}

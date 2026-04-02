@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Download, FileText, FileSpreadsheet, Wrench } from "lucide-react";
 import { useFeloOutputStore } from "@/stores/felo-output-store";
 import { FeloShortcuts } from "./felo-shortcuts";
 
@@ -157,6 +157,64 @@ export function FeloChat() {
     }
   }, [isStreaming, threadId, liveDocId, addOutput, setLiveDocId]);
 
+  // Export message content
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [customInstructionId, setCustomInstructionId] = useState<string | null>(null);
+  const [customInstruction, setCustomInstruction] = useState("");
+
+  const handleExport = useCallback(async (msgId: string, format: "md" | "docx" | "xlsx", instruction?: string) => {
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg || !msg.content.trim()) return;
+
+    setExportingId(msgId);
+    setMenuOpenId(null);
+    setCustomInstructionId(null);
+
+    try {
+      const res = await fetch("/api/felo/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: msg.content,
+          format,
+          instruction: instruction || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export failed" }));
+        alert(`匯出失敗：${err.error}`);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Add to output store
+      addOutput({
+        id: crypto.randomUUID(),
+        type: "document",
+        localPath: data.path,
+        prompt: instruction || `匯出為 ${format.toUpperCase()}`,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Show success in chat
+      setMessages(prev => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: `✅ 已匯出：${data.fileName}\n📁 ${data.path}`,
+        },
+      ]);
+    } catch (e) {
+      alert(`匯出錯誤：${e instanceof Error ? e.message : "unknown"}`);
+    } finally {
+      setExportingId(null);
+    }
+  }, [messages, addOutput]);
+
   return (
     <div className="flex h-full flex-col">
       <FeloShortcuts onSelect={handleShortcut} />
@@ -169,22 +227,106 @@ export function FeloChat() {
         )}
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                msg.role === "user"
-                  ? "bg-cy-accent/15 text-cy-text"
-                  : "bg-cy-input/30 text-cy-text"
-              }`}
-            >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-              {msg.toolResults?.map((tr, i) => (
-                <div key={i} className="mt-2 rounded border border-purple-500/20 bg-purple-500/5 p-2 text-xs">
-                  <p className="text-purple-300 font-medium">{tr.toolName}: {tr.title || "完成"}</p>
-                  {tr.localPaths?.map((lp, j) => (
-                    <img key={j} src={lp} alt="" className="mt-1 max-h-32 rounded" />
-                  ))}
+            <div className="max-w-[85%]">
+              <div
+                className={`rounded-lg px-3 py-2 text-sm ${
+                  msg.role === "user"
+                    ? "bg-cy-accent/15 text-cy-text"
+                    : "bg-cy-input/30 text-cy-text"
+                }`}
+              >
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.toolResults?.map((tr, i) => (
+                  <div key={i} className="mt-2 rounded border border-purple-500/20 bg-purple-500/5 p-2 text-xs">
+                    <p className="text-purple-300 font-medium">{tr.toolName}: {tr.title || "完成"}</p>
+                    {tr.localPaths?.map((lp, j) => (
+                      <img key={j} src={lp} alt="" className="mt-1 max-h-32 rounded" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Export actions — only on assistant messages with content */}
+              {msg.role === "assistant" && msg.content.trim() && !msg.content.startsWith("_") && !msg.content.startsWith("✅") && (
+                <div className="mt-1 relative">
+                  {exportingId === msg.id ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-cy-muted">
+                      <Loader2 className="h-3 w-3 animate-spin" /> 匯出中...
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setMenuOpenId(menuOpenId === msg.id ? null : msg.id)}
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-cy-muted hover:text-cy-text hover:bg-cy-input/30 transition-colors"
+                      >
+                        <Download className="h-3 w-3" /> 匯出
+                      </button>
+
+                      {menuOpenId === msg.id && (
+                        <div className="absolute left-0 bottom-6 z-10 rounded-lg border border-cy-border bg-cy-card shadow-xl p-1.5 space-y-0.5 min-w-[160px]">
+                          <button
+                            onClick={() => handleExport(msg.id, "md")}
+                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-cy-text hover:bg-cy-input/40 transition-colors"
+                          >
+                            <FileText className="h-3.5 w-3.5" /> 存為 Markdown
+                          </button>
+                          <button
+                            onClick={() => handleExport(msg.id, "docx")}
+                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-cy-text hover:bg-cy-input/40 transition-colors"
+                          >
+                            <FileText className="h-3.5 w-3.5" /> 存為 DOCX
+                          </button>
+                          <button
+                            onClick={() => handleExport(msg.id, "xlsx")}
+                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-cy-text hover:bg-cy-input/40 transition-colors"
+                          >
+                            <FileSpreadsheet className="h-3.5 w-3.5" /> 存為 Excel
+                          </button>
+                          <div className="border-t border-cy-border/30 my-1" />
+                          <button
+                            onClick={() => {
+                              setCustomInstructionId(msg.id);
+                              setMenuOpenId(null);
+                              setCustomInstruction("");
+                            }}
+                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-purple-300 hover:bg-purple-500/10 transition-colors"
+                          >
+                            <Wrench className="h-3.5 w-3.5" /> 自訂指令處理
+                          </button>
+                        </div>
+                      )}
+
+                      {customInstructionId === msg.id && (
+                        <div className="mt-1.5 flex gap-1.5">
+                          <input
+                            value={customInstruction}
+                            onChange={(e) => setCustomInstruction(e.target.value)}
+                            onCompositionStart={() => { isComposingRef.current = true; }}
+                            onCompositionEnd={() => { isComposingRef.current = false; }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !isComposingRef.current && customInstruction.trim()) {
+                                e.preventDefault();
+                                handleExport(msg.id, "md", customInstruction);
+                              }
+                              if (e.key === "Escape") setCustomInstructionId(null);
+                            }}
+                            placeholder="例：只取表格部分、翻譯成英文..."
+                            autoFocus
+                            className="flex-1 rounded border border-purple-500/30 bg-cy-input/50 px-2 py-1 text-xs text-cy-text placeholder:text-cy-muted/50 focus:outline-none focus:border-purple-500/50"
+                          />
+                          <button
+                            onClick={() => handleExport(msg.id, "md", customInstruction)}
+                            disabled={!customInstruction.trim()}
+                            className="rounded bg-purple-600 px-2 py-1 text-xs text-white hover:bg-purple-500 disabled:opacity-50"
+                          >
+                            處理
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         ))}
