@@ -1,6 +1,9 @@
 # CycloneOS Changelog
 
 ## 2026-04-02
+- Felo 聊天訊息改用 ReactMarkdown 渲染（支援 GFM、程式碼高亮）
+- Felo 進度訊息改用獨立 SSE status 事件 + spinner 灰字顯示
+- Push-GitHub 新增 folderName 對話框，推送成功後顯示 GitHub Pages URL
 - Felo AI 工作站上線：SuperAgent 對話、生圖、Web Fetch、快捷入口、產出面板
 - Felo 生圖功能：SSE 串流 + LiveDoc polling + 圖片下載到 Google Drive
 - Felo 對話匯出：每則訊息可匯出為 MD / DOCX / XLSX，支援自訂指令處理
