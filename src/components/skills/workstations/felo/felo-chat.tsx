@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { Loader2, Send, Download, FileText, FileSpreadsheet, Wrench } from "lucide-react";
+import { Loader2, Send, Wrench } from "lucide-react";
 import { useFeloOutputStore } from "@/stores/felo-output-store";
 import { FeloShortcuts } from "./felo-shortcuts";
 
@@ -167,7 +167,6 @@ export function FeloChat() {
 
   // Export message content
   const [exportingId, setExportingId] = useState<string | null>(null);
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [customInstructionId, setCustomInstructionId] = useState<string | null>(null);
   const [customInstruction, setCustomInstruction] = useState("");
 
@@ -176,7 +175,6 @@ export function FeloChat() {
     if (!msg || !msg.content.trim()) return;
 
     setExportingId(msgId);
-    setMenuOpenId(null);
     setCustomInstructionId(null);
 
     try {
@@ -322,46 +320,39 @@ export function FeloChat() {
                     </span>
                   ) : (
                     <>
-                      <button
-                        onClick={() => setMenuOpenId(menuOpenId === msg.id ? null : msg.id)}
-                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-cy-muted hover:text-cy-text hover:bg-cy-input/30 transition-colors"
-                      >
-                        <Download className="h-3 w-3" /> 匯出
-                      </button>
-
-                      {menuOpenId === msg.id && (
-                        <div className="absolute left-0 bottom-6 z-10 rounded-lg border border-cy-border bg-cy-card shadow-xl p-1.5 space-y-0.5 min-w-[160px]">
-                          <button
-                            onClick={() => handleExport(msg.id, "md")}
-                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-cy-text hover:bg-cy-input/40 transition-colors"
-                          >
-                            <FileText className="h-3.5 w-3.5" /> 存為 Markdown
-                          </button>
-                          <button
-                            onClick={() => handleExport(msg.id, "docx")}
-                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-cy-text hover:bg-cy-input/40 transition-colors"
-                          >
-                            <FileText className="h-3.5 w-3.5" /> 存為 DOCX
-                          </button>
-                          <button
-                            onClick={() => handleExport(msg.id, "xlsx")}
-                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-cy-text hover:bg-cy-input/40 transition-colors"
-                          >
-                            <FileSpreadsheet className="h-3.5 w-3.5" /> 存為 Excel
-                          </button>
-                          <div className="border-t border-cy-border/30 my-1" />
-                          <button
-                            onClick={() => {
-                              setCustomInstructionId(msg.id);
-                              setMenuOpenId(null);
-                              setCustomInstruction("");
-                            }}
-                            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-purple-300 hover:bg-purple-500/10 transition-colors"
-                          >
-                            <Wrench className="h-3.5 w-3.5" /> 自訂指令處理
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleExport(msg.id, "md")}
+                          title="存為 Markdown → Obsidian/CycloneOS/outputs"
+                          className="rounded px-1.5 py-0.5 text-[10px] text-cy-muted hover:text-cy-text hover:bg-cy-input/30 transition-colors"
+                        >
+                          MD
+                        </button>
+                        <button
+                          onClick={() => handleExport(msg.id, "docx")}
+                          title="存為 DOCX → GDrive/CycloneOS/documents"
+                          className="rounded px-1.5 py-0.5 text-[10px] text-cy-muted hover:text-cy-text hover:bg-cy-input/30 transition-colors"
+                        >
+                          DOCX
+                        </button>
+                        <button
+                          onClick={() => handleExport(msg.id, "xlsx")}
+                          title="存為 Excel → GDrive/CycloneOS/documents"
+                          className="rounded px-1.5 py-0.5 text-[10px] text-cy-muted hover:text-cy-text hover:bg-cy-input/30 transition-colors"
+                        >
+                          XLSX
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCustomInstructionId(customInstructionId === msg.id ? null : msg.id);
+                            setCustomInstruction("");
+                          }}
+                          title="自訂指令處理"
+                          className="rounded px-1.5 py-0.5 text-[10px] text-purple-400/70 hover:text-purple-300 hover:bg-purple-500/10 transition-colors"
+                        >
+                          <Wrench className="h-3 w-3" />
+                        </button>
+                      </div>
 
                       {customInstructionId === msg.id && (
                         <div className="mt-1.5 flex gap-1.5">

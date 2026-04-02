@@ -19,7 +19,10 @@ export function FeloOutputPanel() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto p-3">
-        <h3 className="mb-2 text-xs font-medium text-cy-muted">產出檔案</h3>
+        <h3 className="mb-1.5 text-xs font-medium text-cy-muted">產出檔案</h3>
+        <p className="mb-2 text-[10px] text-cy-muted/60">
+          圖片 → GDrive/CycloneOS/images
+        </p>
         {recent.length === 0 ? (
           <p className="py-8 text-center text-xs text-cy-muted/50">
             尚無產出
