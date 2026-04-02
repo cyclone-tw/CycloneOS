@@ -9,7 +9,7 @@ import { join, resolve } from "path";
 import { cleanClaudeOutput } from "@/lib/documents-utils";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { markdownToDocx, markdownToPdfHtml, markdownToXlsx } from "@/lib/document-converters";
-import { PATHS, expandHome } from "@/config/paths-config";
+import { PATHS, expandHome, generateFileName, extractSummary } from "@/config/paths-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   }
 
   const provider = getLLMProvider();
-  const shouldSaveMd = outputFormats?.includes("md") && outputPath;
+  const shouldSaveMd = outputFormats?.includes("md");
   const shouldSaveDocx = outputFormats?.includes("docx") && outputPath;
   const shouldSavePdf = outputFormats?.includes("pdf") && outputPath;
   const shouldSaveXlsx = outputFormats?.includes("xlsx") && outputPath;
@@ -115,14 +115,16 @@ export async function POST(request: NextRequest) {
 
       // Save outputs
       const cleaned = cleanClaudeOutput(fullContent);
-      if (cleaned && outputPath) {
-        const outDir = resolve(expandHome(outputPath));
-        const ts = Date.now();
+      if (cleaned) {
+        const summary = extractSummary(cleaned);
+        const userOutDir = outputPath ? resolve(expandHome(outputPath)) : null;
 
         if (shouldSaveMd) {
           try {
-            await mkdir(outDir, { recursive: true });
-            const filePath = join(outDir, `output-${ts}.md`);
+            const mdDir = resolve(PATHS.markdownOutputs);
+            await mkdir(mdDir, { recursive: true });
+            const fileName = generateFileName("doc", summary);
+            const filePath = join(mdDir, fileName);
             await writeFile(filePath, cleaned, "utf-8");
             send("saved", "", { path: filePath });
           } catch (e) {
@@ -130,11 +132,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (shouldSaveDocx) {
+        if (shouldSaveDocx && userOutDir) {
           try {
-            await mkdir(outDir, { recursive: true });
+            await mkdir(userOutDir, { recursive: true });
             const docxBuf = await markdownToDocx(cleaned);
-            const filePath = join(outDir, `output-${ts}.docx`);
+            const fileName = generateFileName("doc", summary, "docx");
+            const filePath = join(userOutDir, fileName);
             await writeFile(filePath, docxBuf);
             send("saved", "", { path: filePath });
           } catch (e) {
@@ -142,11 +145,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (shouldSavePdf) {
+        if (shouldSavePdf && userOutDir) {
           try {
-            await mkdir(outDir, { recursive: true });
+            await mkdir(userOutDir, { recursive: true });
             const pdfHtml = await markdownToPdfHtml(cleaned);
-            const filePath = join(outDir, `output-${ts}-print.html`);
+            const fileName = generateFileName("doc", summary, "html");
+            const filePath = join(userOutDir, fileName);
             await writeFile(filePath, pdfHtml, "utf-8");
             send("saved", "", { path: filePath, note: "開啟後按 Ctrl+P / Cmd+P 列印為 PDF" });
           } catch (e) {
@@ -154,11 +158,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (shouldSaveXlsx) {
+        if (shouldSaveXlsx && userOutDir) {
           try {
-            await mkdir(outDir, { recursive: true });
+            await mkdir(userOutDir, { recursive: true });
             const xlsxBuf = await markdownToXlsx(cleaned);
-            const filePath = join(outDir, `output-${ts}.xlsx`);
+            const fileName = generateFileName("doc", summary, "xlsx");
+            const filePath = join(userOutDir, fileName);
             await writeFile(filePath, xlsxBuf);
             send("saved", "", { path: filePath });
           } catch (e) {

@@ -9,7 +9,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join, resolve } from "path";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { markdownToDocx, markdownToXlsx } from "@/lib/document-converters";
-import { PATHS } from "@/config/paths-config";
+import { PATHS, generateFileName, extractSummary } from "@/config/paths-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,9 +24,6 @@ export async function POST(req: NextRequest) {
   if (!format || !["md", "docx", "xlsx"].includes(format)) {
     return Response.json({ error: "format must be md, docx, or xlsx" }, { status: 400 });
   }
-
-  const outDir = resolve(outputPath || PATHS.documents);
-  const ts = Date.now();
 
   try {
     let processed = content;
@@ -59,27 +56,32 @@ ${content}
       processed = result.trim() || content;
     }
 
-    await mkdir(outDir, { recursive: true });
-
+    const summary = extractSummary(processed);
     let filePath: string;
     let fileName: string;
 
     switch (format) {
       case "md": {
-        fileName = `felo-export-${ts}.md`;
+        fileName = generateFileName("felo", summary);
+        const outDir = resolve(PATHS.markdownOutputs);
+        await mkdir(outDir, { recursive: true });
         filePath = join(outDir, fileName);
         await writeFile(filePath, processed, "utf-8");
         break;
       }
       case "docx": {
-        fileName = `felo-export-${ts}.docx`;
+        fileName = generateFileName("felo", summary, "docx");
+        const outDir = resolve(outputPath || PATHS.documents);
+        await mkdir(outDir, { recursive: true });
         filePath = join(outDir, fileName);
         const docxBuf = await markdownToDocx(processed);
         await writeFile(filePath, docxBuf);
         break;
       }
       case "xlsx": {
-        fileName = `felo-export-${ts}.xlsx`;
+        fileName = generateFileName("felo", summary, "xlsx");
+        const outDir = resolve(outputPath || PATHS.documents);
+        await mkdir(outDir, { recursive: true });
         filePath = join(outDir, fileName);
         const xlsxBuf = await markdownToXlsx(processed);
         await writeFile(filePath, xlsxBuf);
