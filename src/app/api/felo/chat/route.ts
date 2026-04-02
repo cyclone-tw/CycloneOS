@@ -55,9 +55,9 @@ async function pollAndDownloadImage(
 
         if (dlRes.ok) {
           const imgBuf = Buffer.from(await dlRes.arrayBuffer());
-          await mkdir(PATHS.feloImages, { recursive: true });
+          await mkdir(PATHS.images, { recursive: true });
           const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
-          await writeFile(join(PATHS.feloImages, fname), imgBuf);
+          await writeFile(join(PATHS.images, fname), imgBuf);
           const localPath = `/uploads/felo/images/${fname}`;
           console.log("[felo-chat] image downloaded via poll:", localPath);
           return { localPath, title };
@@ -69,9 +69,9 @@ async function pollAndDownloadImage(
           const imgRes = await fetch(imgUrl);
           if (imgRes.ok) {
             const imgBuf = Buffer.from(await imgRes.arrayBuffer());
-            await mkdir(PATHS.feloImages, { recursive: true });
+            await mkdir(PATHS.images, { recursive: true });
             const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
-            await writeFile(join(PATHS.feloImages, fname), imgBuf);
+            await writeFile(join(PATHS.images, fname), imgBuf);
             const localPath = `/uploads/felo/images/${fname}`;
             console.log("[felo-chat] image downloaded via thumbnail:", localPath);
             return { localPath, title };
@@ -290,12 +290,12 @@ export async function POST(req: NextRequest) {
                           // If completed with URL in stream (unlikely but handle it)
                           if (img.status === "completed" && img.url) {
                             try {
-                              await mkdir(PATHS.feloImages, { recursive: true });
+                              await mkdir(PATHS.images, { recursive: true });
                               const imgRes = await fetch(img.url);
                               if (imgRes.ok) {
                                 const imgBuf = Buffer.from(await imgRes.arrayBuffer());
                                 const fname = `felo-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`;
-                                await writeFile(join(PATHS.feloImages, fname), imgBuf);
+                                await writeFile(join(PATHS.images, fname), imgBuf);
                                 const localPath = `/uploads/felo/images/${fname}`;
                                 emit("tool-result", { toolName: "generate_images", title: img.title, localPaths: [localPath] });
                                 // Remove from pending

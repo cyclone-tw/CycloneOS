@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const timestamp = Date.now();
     const filename = `felo-img-${timestamp}.png`;
 
-    await mkdir(PATHS.feloImages, { recursive: true });
+    await mkdir(PATHS.images, { recursive: true });
 
     const imgRes = await fetch(imageUrl);
     if (!imgRes.ok) {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-    const localFilePath = join(PATHS.feloImages, filename);
+    const localFilePath = join(PATHS.images, filename);
     await writeFile(localFilePath, imgBuffer);
 
     const localPath = `/uploads/felo/images/${filename}`;

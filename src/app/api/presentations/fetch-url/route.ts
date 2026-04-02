@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
     const slug = new URL(url).hostname.replace(/\./g, "-");
     const filename = `${slug}-${timestamp}.md`;
 
-    await mkdir(PATHS.feloWebFetch, { recursive: true });
-    await writeFile(join(PATHS.feloWebFetch, filename), content, "utf-8");
+    await mkdir(PATHS.webFetch, { recursive: true });
+    await writeFile(join(PATHS.webFetch, filename), content, "utf-8");
 
     const localPath = `/uploads/felo/web-fetch/${filename}`;
 

@@ -15,21 +15,18 @@ const GOOGLE_DRIVE_ROOT = join(
 // --- CycloneOS 雲端資料夾 ---
 const CYCLONEOS_CLOUD = join(GOOGLE_DRIVE_ROOT, "CycloneOS");
 
-// --- 各功能的輸出路徑 ---
+// --- 依檔案格式分類的輸出路徑 ---
 export const PATHS = {
-  // Felo 生圖
-  feloImages: join(CYCLONEOS_CLOUD, "images"),
+  // 圖片（Felo 生圖等）
+  images: join(CYCLONEOS_CLOUD, "images"),
 
-  // Felo Web Fetch 擷取
-  feloWebFetch: join(CYCLONEOS_CLOUD, "web-fetch"),
-
-  // Felo 對話匯出（MD, DOCX, XLSX）
-  feloExports: join(CYCLONEOS_CLOUD, "exports"),
-
-  // Documents 工作站輸出
+  // 文件（MD, DOCX, XLSX — Documents 工作站 + Felo 匯出共用）
   documents: join(CYCLONEOS_CLOUD, "documents"),
 
-  // 簡報本地存放
+  // 網頁擷取
+  webFetch: join(CYCLONEOS_CLOUD, "web-fetch"),
+
+  // 簡報
   slides: join(CYCLONEOS_CLOUD, "slides"),
 
   // Google Drive 根（供其他用途）

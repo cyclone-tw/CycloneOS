@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "format must be md, docx, or xlsx" }, { status: 400 });
   }
 
-  const outDir = resolve(outputPath || PATHS.feloExports);
+  const outDir = resolve(outputPath || PATHS.documents);
   const ts = Date.now();
 
   try {
