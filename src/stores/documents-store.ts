@@ -1,7 +1,7 @@
 // dashboard/src/stores/documents-store.ts
 import { create } from "zustand";
 
-export type OutputFormat = "md" | "docx" | "pdf" | "html-slides" | "pptx" | "xlsx";
+export type OutputFormat = "md" | "docx" | "pdf" | "xlsx";
 export type SessionStatus = "configuring" | "processing" | "completed";
 
 export interface SourceItem {
