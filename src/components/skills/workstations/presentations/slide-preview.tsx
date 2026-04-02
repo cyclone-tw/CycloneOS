@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
-import { Download, RotateCcw, Play, Printer, FileText, Upload, Loader2 } from "lucide-react";
+import { Download, RotateCcw, Play, Printer, FileText, Upload, Loader2, ExternalLink, X } from "lucide-react";
 import { usePresentationsStore } from "@/stores/presentations-store";
 import { outlineToHtml, outlineToSpeakerNotes } from "@/lib/presentations-utils";
 
@@ -9,6 +9,9 @@ export function SlidePreview() {
   const session = getActiveSession();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPushing, setIsPushing] = useState(false);
+  const [showPushDialog, setShowPushDialog] = useState(false);
+  const [pushFolderName, setPushFolderName] = useState("");
+  const [pushResult, setPushResult] = useState<{ url: string; folder: string } | null>(null);
 
   const slides = session?.outline.slides ?? [];
   const selectedId = session?.selectedSlideId;
@@ -107,6 +110,14 @@ export function SlidePreview() {
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   };
 
+  const openPushDialog = () => {
+    if (!session) return;
+    const title = session.outline.title || "presentation";
+    setPushFolderName(slugify(title));
+    setPushResult(null);
+    setShowPushDialog(true);
+  };
+
   const handlePushGitHub = async () => {
     if (!session || isPushing) return;
     setIsPushing(true);
@@ -118,11 +129,12 @@ export function SlidePreview() {
           title: session.outline.title || "presentation",
           html,
           speakerNotes: outlineToSpeakerNotes(session.outline),
+          folderName: pushFolderName.trim() || undefined,
         }),
       });
       const result = await res.json();
       if (result.success) {
-        alert(`已推送到 GitHub：${result.path}`);
+        setPushResult({ url: result.url, folder: result.folder });
       } else {
         alert(`推送失敗：${result.error}`);
       }
@@ -172,7 +184,7 @@ export function SlidePreview() {
             講稿
           </button>
           <button
-            onClick={handlePushGitHub}
+            onClick={openPushDialog}
             disabled={isPushing}
             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-cy-muted hover:bg-cy-input/50 hover:text-cy-text transition-colors disabled:opacity-40"
             title="推送到 GitHub"
@@ -204,6 +216,98 @@ export function SlidePreview() {
           />
         </div>
       </div>
+
+      {/* Push to GitHub dialog */}
+      {showPushDialog && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
+          <div className="w-[380px] rounded-xl border border-cy-border bg-cy-card p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-cy-text">推送到 GitHub Pages</h3>
+              <button onClick={() => setShowPushDialog(false)} className="text-cy-muted hover:text-cy-text">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {pushResult ? (
+              <div className="space-y-3">
+                <p className="text-xs text-green-400">推送成功！</p>
+                <div className="rounded-lg bg-cy-bg/60 p-3">
+                  <p className="text-[10px] text-cy-muted mb-1">GitHub Pages URL</p>
+                  <a
+                    href={pushResult.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-sm text-cy-accent hover:text-cy-accent/80 break-all"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                    {pushResult.url}
+                  </a>
+                </div>
+                <p className="text-[10px] text-cy-muted">
+                  GitHub Pages 部署約需 1-2 分鐘
+                </p>
+                <button
+                  onClick={() => setShowPushDialog(false)}
+                  className="w-full rounded-lg bg-cy-accent/15 px-3 py-1.5 text-xs text-cy-accent hover:bg-cy-accent/25 transition-colors"
+                >
+                  完成
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] text-cy-muted mb-1">資料夾名稱（URL 路徑）</label>
+                  <input
+                    value={pushFolderName}
+                    onChange={(e) => setPushFolderName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && pushFolderName.trim()) {
+                        e.preventDefault();
+                        handlePushGitHub();
+                      }
+                    }}
+                    placeholder="my-presentation"
+                    autoFocus
+                    className="w-full rounded-lg border border-cy-border bg-cy-input/50 px-3 py-1.5 text-sm text-cy-text placeholder:text-cy-muted/50 focus:border-cy-accent/50 focus:outline-none"
+                  />
+                  <p className="mt-1 text-[10px] text-cy-muted">
+                    URL：https://cyclone-tw.github.io/slides/<span className="text-cy-text/70">{pushFolderName || "..."}</span>/
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowPushDialog(false)}
+                    className="flex-1 rounded-lg px-3 py-1.5 text-xs text-cy-muted hover:bg-cy-input/40 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handlePushGitHub}
+                    disabled={isPushing || !pushFolderName.trim()}
+                    className="flex-1 rounded-lg bg-cy-accent/15 px-3 py-1.5 text-xs text-cy-accent hover:bg-cy-accent/25 transition-colors disabled:opacity-40"
+                  >
+                    {isPushing ? (
+                      <span className="flex items-center justify-center gap-1.5">
+                        <Loader2 className="h-3 w-3 animate-spin" /> 推送中...
+                      </span>
+                    ) : (
+                      "推送"
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fff]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
 }

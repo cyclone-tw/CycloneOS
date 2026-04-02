@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { Loader2, Send, Download, FileText, FileSpreadsheet, Wrench } from "lucide-react";
 import { useFeloOutputStore } from "@/stores/felo-output-store";
 import { FeloShortcuts } from "./felo-shortcuts";
@@ -21,6 +24,7 @@ export function FeloChat() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const isComposingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addOutput, setLiveDocId, liveDocId } = useFeloOutputStore();
@@ -107,7 +111,10 @@ export function FeloChat() {
             if (eventType === "state") {
               if (parsed.threadId) setThreadId(parsed.threadId);
               if (parsed.liveDocId) setLiveDocId(parsed.liveDocId);
+            } else if (eventType === "status") {
+              setCurrentStatus(parsed.text || null);
             } else if (eventType === "message") {
+              setCurrentStatus(null);
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
@@ -154,6 +161,7 @@ export function FeloChat() {
       );
     } finally {
       setIsStreaming(false);
+      setCurrentStatus(null);
     }
   }, [isStreaming, threadId, liveDocId, addOutput, setLiveDocId]);
 
@@ -235,7 +243,66 @@ export function FeloChat() {
                     : "bg-cy-input/30 text-cy-text"
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === "user" ? (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                ) : (
+                  <div className="prose-cy">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                      components={{
+                        p: ({ children }) => <p className="mb-1.5 last:mb-0 text-cy-text/90">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-cy-text">{children}</strong>,
+                        em: ({ children }) => <em className="text-cy-text/80">{children}</em>,
+                        h1: ({ children }) => <h1 className="mb-2 mt-3 text-base font-bold text-cy-text">{children}</h1>,
+                        h2: ({ children }) => <h2 className="mb-1.5 mt-2 text-sm font-semibold text-cy-text">{children}</h2>,
+                        h3: ({ children }) => <h3 className="mb-1 mt-1.5 text-sm font-semibold text-cy-text">{children}</h3>,
+                        ul: ({ children }) => <ul className="mb-1.5 ml-4 list-disc space-y-0.5 text-cy-text/90">{children}</ul>,
+                        ol: ({ children }) => <ol className="mb-1.5 ml-4 list-decimal space-y-0.5 text-cy-text/90">{children}</ol>,
+                        li: ({ children }) => <li className="text-cy-text/90">{children}</li>,
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="text-purple-400 underline underline-offset-2 hover:text-purple-300">
+                            {children}
+                          </a>
+                        ),
+                        pre: ({ children }) => (
+                          <pre className="my-1.5 overflow-x-auto rounded-md bg-cy-bg/60 p-2 text-xs">
+                            {children}
+                          </pre>
+                        ),
+                        code: ({ className, children, ...props }) => {
+                          const isBlock = className?.includes("language-") || className?.includes("hljs");
+                          if (isBlock) {
+                            return <code className={className} {...props}>{children}</code>;
+                          }
+                          return (
+                            <code className="rounded bg-cy-input/40 px-1 py-0.5 text-xs text-purple-300" {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                        blockquote: ({ children }) => (
+                          <blockquote className="my-1.5 border-l-2 border-purple-500/40 pl-2.5 text-cy-text/80 italic">
+                            {children}
+                          </blockquote>
+                        ),
+                        table: ({ children }) => (
+                          <div className="my-1.5 overflow-x-auto rounded border border-cy-input/30">
+                            <table className="w-full text-xs">{children}</table>
+                          </div>
+                        ),
+                        th: ({ children }) => (
+                          <th className="border-b border-cy-input/30 bg-cy-input/20 px-2 py-1 text-left font-medium text-cy-text">{children}</th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="border-b border-cy-input/10 px-2 py-1 text-cy-text/80">{children}</td>
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
                 {msg.toolResults?.map((tr, i) => (
                   <div key={i} className="mt-2 rounded border border-purple-500/20 bg-purple-500/5 p-2 text-xs">
                     <p className="text-purple-300 font-medium">{tr.toolName}: {tr.title || "完成"}</p>
@@ -247,7 +314,7 @@ export function FeloChat() {
               </div>
 
               {/* Export actions — only on assistant messages with content */}
-              {msg.role === "assistant" && msg.content.trim() && !msg.content.startsWith("_") && !msg.content.startsWith("✅") && (
+              {msg.role === "assistant" && msg.content.trim() && !msg.content.startsWith("✅") && (
                 <div className="mt-1 relative">
                   {exportingId === msg.id ? (
                     <span className="inline-flex items-center gap-1 text-[10px] text-cy-muted">
@@ -330,6 +397,12 @@ export function FeloChat() {
             </div>
           </div>
         ))}
+        {currentStatus && (
+          <div className="flex items-center gap-2 px-1">
+            <Loader2 className="h-3 w-3 animate-spin text-cy-muted/60" />
+            <span className="text-xs text-cy-muted/60">{currentStatus}</span>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 

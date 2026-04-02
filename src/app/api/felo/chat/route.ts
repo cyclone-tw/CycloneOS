@@ -253,8 +253,7 @@ export async function POST(req: NextRequest) {
                   }
 
                   case "processing": {
-                    // Felo system message (always simplified Chinese) — show localized
-                    emit("message", { content: "_處理中..._\n" });
+                    emit("status", { text: "處理中..." });
                     break;
                   }
 
@@ -264,7 +263,7 @@ export async function POST(req: NextRequest) {
                     for (const tool of tools) {
                       if (tool.name === "generate_images" && tool.params?.images) {
                         for (const img of tool.params.images) {
-                          emit("message", { content: `_🎨 生成圖片中：${img.title || ""}..._\n` });
+                          emit("status", { text: `🎨 生成圖片中：${img.title || ""}...` });
                         }
                       }
                     }
@@ -285,7 +284,7 @@ export async function POST(req: NextRequest) {
                             console.log("[felo-chat] tracked pending image:", img.resource_id);
                           }
                           if (img.status === "generating") {
-                            emit("message", { content: `_🎨 圖片生成中..._\n` });
+                            emit("status", { text: "🎨 圖片生成中..." });
                           }
                           // If completed with URL in stream (unlikely but handle it)
                           if (img.status === "completed" && img.url) {
@@ -356,7 +355,7 @@ export async function POST(req: NextRequest) {
         // After stream ends, poll for any pending images
         if (pendingImages.length > 0) {
           console.log(`[felo-chat] polling ${pendingImages.length} pending image(s)...`);
-          emit("message", { content: `_⏳ 等待圖片生成完成..._\n` });
+          emit("status", { text: "⏳ 等待圖片生成完成..." });
 
           for (const pending of pendingImages) {
             const result = await pollAndDownloadImage(
@@ -372,7 +371,7 @@ export async function POST(req: NextRequest) {
                 localPaths: [result.localPath],
               });
             } else {
-              emit("message", { content: `_❌ 圖片生成逾時：${pending.title}_\n` });
+              emit("status", { text: `❌ 圖片生成逾時：${pending.title}` });
             }
           }
         }
