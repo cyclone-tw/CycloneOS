@@ -213,6 +213,11 @@
   background: transparent !important;
 }
 
+/* Safe area padding for iPhone notch/home indicator */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Premium border with subtle shine */
 .cy-border-shine {
   border: 1px solid rgba(136, 170, 210, 0.1);

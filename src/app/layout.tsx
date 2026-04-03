@@ -17,6 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "CycloneOS Dashboard",
   description: "AI Workstation",
+  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 export default function RootLayout({
@@ -26,6 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-TW" className="dark">
+      <head>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>" />
+      </head>
       <body
         className={`${notoSansTC.variable} ${jetbrainsMono.variable} font-sans bg-cy-bg text-cy-text antialiased`}
       >
