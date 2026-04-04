@@ -33,7 +33,7 @@ ${topicsYaml}
 tags: [draco, yt-summary]
 ---
 
-![](${meta.url})
+<iframe src="https://www.youtube.com/embed/${meta.videoId}" title="${meta.title}" allowfullscreen></iframe>
 
 ${summaryMarkdown}
 `;

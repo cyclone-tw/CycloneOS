@@ -36,7 +36,18 @@ export async function createNotionPage(params: CreatePageParams): Promise<string
       "Obsidian Path": { rich_text: [{ text: { content: obsidianPath } }] },
       Status: { status: { name: "Done" } },
     },
-    children: markdownToBlocks(summaryMarkdown),
+    children: [
+      // Embed YouTube video at top
+      {
+        object: "block",
+        type: "video",
+        video: {
+          type: "external",
+          external: { url: meta.url },
+        },
+      },
+      ...markdownToBlocks(summaryMarkdown),
+    ],
   };
 
   const response = await fetch(`${NOTION_API}/pages`, {
