@@ -34,6 +34,9 @@ export const PATHS = {
   // Markdown 輸出（所有 skill 共用，存到 Obsidian）
   markdownOutputs: OBSIDIAN_OUTPUTS,
 
+  // YouTube 筆記（yt-notes pipeline 輸出）
+  ytNotes: join(OBSIDIAN_VAULT, "Draco/yt-notes"),
+
   // Google Drive 根（供其他用途）
   googleDrive: GOOGLE_DRIVE_ROOT,
   cycloneosCloud: CYCLONEOS_CLOUD,
