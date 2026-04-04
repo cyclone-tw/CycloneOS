@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useAppStore } from "@/stores/app-store";
+import { useAgentStore } from "@/stores/agent-store";
 import { YtInput } from "./yt-input";
 import { JobProgress } from "./job-progress";
 import { JobHistory } from "./job-history";
+import { WorkstationLLMControls } from "../shared/workstation-llm-controls";
 
 interface JobData {
   id: string;
@@ -19,6 +21,7 @@ interface JobData {
 
 export function TranscribeWorkstation() {
   const { setActiveWorkstation } = useAppStore();
+  const { provider, model } = useAgentStore();
   const [activeJob, setActiveJob] = useState<JobData | null>(null);
   const [history, setHistory] = useState<JobData[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,7 +65,7 @@ export function TranscribeWorkstation() {
       const res = await fetch("/api/transcribe/youtube", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, provider, model }),
       });
       const data = await res.json();
       if (data.jobId) {
@@ -76,7 +79,7 @@ export function TranscribeWorkstation() {
     } catch (err) {
       console.error("Submit error:", err);
     }
-  }, []);
+  }, [provider, model]);
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 5.5rem)" }}>
@@ -90,6 +93,7 @@ export function TranscribeWorkstation() {
         </button>
         <span className="text-lg">🎙️</span>
         <h1 className="text-lg font-bold text-cy-text">語音轉錄工作站</h1>
+        <WorkstationLLMControls />
       </div>
 
       <div className="flex-1 overflow-y-auto py-6">

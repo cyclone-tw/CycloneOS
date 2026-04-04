@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAppStore } from "@/stores/app-store";
 import { FeloChat } from "./felo-chat";
 import { FeloOutputPanel } from "./felo-output-panel";
+import { WorkstationLLMControls } from "../shared/workstation-llm-controls";
 
 export function FeloWorkstation() {
   const { setActiveWorkstation } = useAppStore();
@@ -26,6 +27,7 @@ export function FeloWorkstation() {
             SuperAgent 對話・生圖・Web 擷取・Research
           </p>
         </div>
+        <WorkstationLLMControls />
       </div>
 
       <div className="flex flex-1 overflow-hidden">

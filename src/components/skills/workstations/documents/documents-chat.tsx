@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { useDocumentsStore, type DocChatMessage } from "@/stores/documents-store";
+import { useAgentStore } from "@/stores/agent-store";
 import { cleanClaudeOutput } from "@/lib/documents-utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -19,6 +20,7 @@ export function DocumentsChat() {
   const [isSending, setIsSending] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { provider, model } = useAgentStore();
   const messages = currentSession?.chatHistory ?? [];
   const hasSources = (currentSession?.sources.length ?? 0) > 0;
   const hasOutput = !!currentSession?.outputContent;
@@ -44,7 +46,9 @@ export function DocumentsChat() {
 
     // Build task description based on context
     let taskDescription: string;
-    const isResume = !!currentSession.claudeSessionId;
+    const resumeSessionId =
+      currentSession.sessionProvider === provider ? currentSession.claudeSessionId : null;
+    const isResume = !!resumeSessionId;
 
     if (isResume) {
       // Resuming — just send the user's message
@@ -77,7 +81,9 @@ export function DocumentsChat() {
           taskDescription,
           outputFormats: [],   // don't save file for chat
           outputPath: "",
-          claudeSessionId: currentSession.claudeSessionId,
+          claudeSessionId: resumeSessionId,
+          provider,
+          model,
         }),
       });
 
@@ -105,8 +111,7 @@ export function DocumentsChat() {
               fullResponse += event.content;
               setStreamingContent(fullResponse);
             } else if (event.type === "session" && event.sessionId) {
-              // Capture claude session ID for future --resume
-              setClaudeSessionId(event.sessionId);
+              setClaudeSessionId(event.sessionId, provider);
             } else if (event.type === "error") {
               setError(event.content);
             }
@@ -164,7 +169,7 @@ export function DocumentsChat() {
       <div className="flex items-center justify-between px-3 py-2">
         <h3 className="text-xs font-medium text-cy-muted">🤖 AI 對話</h3>
         {currentSession?.claudeSessionId && (
-          <span className="text-[11px] text-cy-muted/40">session 已建立 · sonnet</span>
+          <span className="text-[11px] text-cy-muted/40">session 已建立 · {provider} · {model}</span>
         )}
       </div>
 

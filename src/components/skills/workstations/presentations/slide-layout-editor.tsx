@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { usePresentationsStore, type SlideDefinition, type SlideType } from "@/stores/presentations-store";
+import { useAgentStore } from "@/stores/agent-store";
 import { getAllPlugins, getPlugin, getTemplateFields } from "@/lib/slide-templates";
 import { FieldRenderer } from "./field-renderer";
 import { Trash2, Loader2 } from "lucide-react";
@@ -42,6 +43,7 @@ function ContentEditor({ slide }: { slide: SlideDefinition }) {
 function SlideGenerationButtons({ slide }: { slide: SlideDefinition }) {
   const { updateSlideField, updateSlideContent, getActiveSession } =
     usePresentationsStore();
+  const { provider, model } = useAgentStore();
 
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
@@ -63,13 +65,15 @@ function SlideGenerationButtons({ slide }: { slide: SlideDefinition }) {
         const res = await fetch("/api/presentations/refine", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action,
-            slideId: slide.id,
-            slideContent: slide.content,
-            presentationTitle,
-          }),
-        });
+        body: JSON.stringify({
+          action,
+          slideId: slide.id,
+          slideContent: slide.content,
+          presentationTitle,
+          provider,
+          model,
+        }),
+      });
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -90,7 +94,7 @@ function SlideGenerationButtons({ slide }: { slide: SlideDefinition }) {
         setLoading(false);
       }
     },
-    [slide.id, slide.content, presentationTitle, updateSlideField, updateSlideContent],
+    [slide.id, slide.content, presentationTitle, updateSlideField, updateSlideContent, provider, model],
   );
 
   const handleGenerateImage = useCallback(async () => {

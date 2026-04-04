@@ -1,4 +1,4 @@
-import type { PermissionMode, ClaudeModel } from "@/types/chat";
+import type { PermissionMode, ClaudeModel, AgentCliProvider, AgentModel } from "@/types/chat";
 
 export type AgentStatus = "idle" | "streaming" | "queued" | "error";
 
@@ -19,8 +19,9 @@ export interface SpawnOptions {
   agentType: string;
   prompt: string;
   sessionId?: string | null;
-  model?: ClaudeModel;
+  model?: AgentModel;
   permissionMode?: PermissionMode;
+  provider?: AgentCliProvider;
   systemPrompt?: string;
   contextDirs?: string[];
 }

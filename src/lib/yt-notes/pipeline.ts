@@ -5,9 +5,13 @@ import { generateSummary } from "./summarizer";
 import { writeSummary, writeTranscript } from "./writer";
 import { createNotionPage } from "./notion";
 import type { Job } from "./types";
+import type { AgentCliProvider } from "@/types/chat";
 
 /** Run the full YouTube processing pipeline in background */
-export async function runPipeline(job: Job): Promise<void> {
+export async function runPipeline(
+  job: Job,
+  options?: { provider?: AgentCliProvider; model?: string }
+): Promise<void> {
   try {
     // Validate URL
     const videoId = parseYouTubeUrl(job.url);
@@ -32,7 +36,7 @@ export async function runPipeline(job: Job): Promise<void> {
 
     // Step 3: Summarize
     updateJob(job.id, { step: "summarizing" });
-    const summary = await generateSummary(download.meta, transcript.fullText);
+    const summary = await generateSummary(download.meta, transcript.fullText, options);
 
     // Step 4: Save
     updateJob(job.id, { step: "saving" });

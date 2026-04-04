@@ -1,5 +1,6 @@
 // dashboard/src/stores/documents-store.ts
 import { create } from "zustand";
+import type { AgentCliProvider } from "@/types/chat";
 
 export type OutputFormat = "md" | "docx" | "pdf" | "xlsx";
 export type SessionStatus = "configuring" | "processing" | "completed";
@@ -33,6 +34,7 @@ export interface DocumentSession {
   outputContent: string;
   chatHistory: DocChatMessage[];
   claudeSessionId: string | null; // Claude CLI session ID for --resume
+  sessionProvider: AgentCliProvider | null;
 }
 
 interface DocumentsState {
@@ -50,7 +52,7 @@ interface DocumentsState {
   appendOutputContent: (chunk: string) => void;
   setError: (error: string | null) => void;
   addChatMessage: (msg: DocChatMessage) => void;
-  setClaudeSessionId: (id: string) => void;
+  setClaudeSessionId: (id: string, provider: AgentCliProvider) => void;
 }
 
 function createSession(): DocumentSession {
@@ -65,6 +67,7 @@ function createSession(): DocumentSession {
     outputContent: "",
     chatHistory: [],
     claudeSessionId: null,
+    sessionProvider: null,
   };
 }
 
@@ -146,9 +149,9 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => ({
     });
   },
 
-  setClaudeSessionId: (id) => {
+  setClaudeSessionId: (id, provider) => {
     const session = get().currentSession;
     if (!session) return;
-    set({ currentSession: { ...session, claudeSessionId: id } });
+    set({ currentSession: { ...session, claudeSessionId: id, sessionProvider: provider } });
   },
 }));

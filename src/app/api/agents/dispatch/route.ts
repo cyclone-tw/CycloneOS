@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { agentType, prompt, sessionId } = body;
+  const { agentType, prompt, sessionId, model, permissionMode, provider } = body;
 
   if (!agentType || !prompt) {
     return Response.json({ error: "Missing agentType or prompt" }, { status: 400 });
@@ -16,7 +16,11 @@ export async function POST(req: NextRequest) {
 
   let processId: string;
   try {
-    processId = agentManager.dispatch(agentType, prompt, sessionId);
+    processId = agentManager.dispatch(agentType, prompt, sessionId, {
+      model,
+      permissionMode,
+      provider,
+    });
   } catch (err) {
     return Response.json({ error: (err as Error).message }, { status: 400 });
   }

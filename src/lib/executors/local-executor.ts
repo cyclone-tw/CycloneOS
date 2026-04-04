@@ -3,6 +3,13 @@ import type { SpawnOptions } from "../agents/types";
 import { spawnClaude } from "../claude-bridge";
 import { eventBus } from "../event-bus";
 
+function isIgnorableCliStderr(text: string): boolean {
+  return (
+    text === "Reading additional input from stdin..." ||
+    text.startsWith("WARNING: proceeding, even though we could not update PATH:")
+  );
+}
+
 export class LocalExecutor implements Executor {
   private processes = new Map<string, ExecutorProcess>();
 
@@ -12,6 +19,7 @@ export class LocalExecutor implements Executor {
       sessionId: options.sessionId,
       permissionMode: options.permissionMode,
       model: options.model,
+      provider: options.provider,
       appendSystemPrompt: options.systemPrompt,
       extraContextDirs: options.contextDirs,
     });
@@ -33,7 +41,7 @@ export class LocalExecutor implements Executor {
       eventBus.emitAgentEvent({
         type: "error",
         processId,
-        content: `Failed to start claude: ${err.message}`,
+        content: `Failed to start agent CLI: ${err.message}`,
         timestamp: Date.now(),
       });
       this.processes.delete(processId);
@@ -76,7 +84,7 @@ export class LocalExecutor implements Executor {
 
     proc.stderr?.on("data", (chunk: Buffer) => {
       const text = chunk.toString().trim();
-      if (text) {
+      if (text && !isIgnorableCliStderr(text)) {
         eventBus.emitAgentEvent({
           type: "error",
           processId,
@@ -128,6 +136,12 @@ export class LocalExecutor implements Executor {
     event: Record<string, unknown>
   ): void {
     const now = Date.now();
+    const eventType = typeof event.type === "string" ? event.type : "";
+
+    if (eventType.includes(".")) {
+      this.parseCodexEvent(processId, event, now);
+      return;
+    }
 
     // Session ID from init
     if (event.type === "system" && event.subtype === "init" && event.session_id) {
@@ -190,5 +204,101 @@ export class LocalExecutor implements Executor {
         });
       }
     }
+  }
+
+  private parseCodexEvent(
+    processId: string,
+    event: Record<string, unknown>,
+    now: number
+  ): void {
+    if (event.type === "thread.started" && typeof event.thread_id === "string") {
+      eventBus.emitAgentEvent({
+        type: "session",
+        processId,
+        sessionId: event.thread_id,
+        timestamp: now,
+      });
+    }
+
+    if (event.type === "error") {
+      const message =
+        typeof event.message === "string"
+          ? event.message
+          : typeof event.error === "string"
+            ? event.error
+            : null;
+
+      if (message) {
+        eventBus.emitAgentEvent({
+          type: "error",
+          processId,
+          content: message,
+          timestamp: now,
+        });
+      }
+    }
+
+    for (const text of this.extractCodexText(event)) {
+      eventBus.emitAgentEvent({
+        type: "text",
+        processId,
+        content: text,
+        timestamp: now,
+      });
+    }
+  }
+
+  private extractCodexText(event: Record<string, unknown>): string[] {
+    const results: string[] = [];
+    const seen = new Set<string>();
+
+    const push = (value: unknown) => {
+      if (typeof value !== "string") return;
+      const text = value.trim();
+      if (!text || seen.has(text)) return;
+      seen.add(text);
+      results.push(value);
+    };
+
+    const visit = (value: unknown): void => {
+      if (!value) return;
+
+      if (typeof value === "string") {
+        push(value);
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item);
+        return;
+      }
+
+      if (typeof value !== "object") return;
+
+      const record = value as Record<string, unknown>;
+
+      if (record.type === "reasoning") return;
+
+      if (typeof record.delta === "string") push(record.delta);
+      if (typeof record.text === "string") push(record.text);
+
+      const textValue = record.text;
+      if (
+        textValue &&
+        typeof textValue === "object" &&
+        "value" in (textValue as Record<string, unknown>)
+      ) {
+        push((textValue as Record<string, unknown>).value);
+      }
+
+      visit(record.delta);
+      visit(record.message);
+      visit(record.content);
+      visit(record.item);
+      visit(record.output);
+    };
+
+    visit(event);
+    return results;
   }
 }

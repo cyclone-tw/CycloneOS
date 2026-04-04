@@ -2,6 +2,7 @@ import { LocalExecutor } from "./executors/local-executor";
 import type { ExecutorProcess } from "./executors/executor";
 import { getAgentDefinition } from "./agents/definitions";
 import type { AgentProcess, AgentEvent } from "./agents/types";
+import type { AgentCliProvider, AgentModel, PermissionMode } from "@/types/chat";
 import { eventBus } from "./event-bus";
 import { sessionStore } from "./session-store";
 
@@ -12,6 +13,9 @@ interface QueueItem {
   agentType: string;
   prompt: string;
   sessionId?: string | null;
+  model?: AgentModel;
+  permissionMode?: PermissionMode;
+  provider?: AgentCliProvider;
 }
 
 class AgentManager {
@@ -20,7 +24,12 @@ class AgentManager {
   private queue: QueueItem[] = [];
   private draining = false;
 
-  dispatch(agentType: string, prompt: string, sessionId?: string | null): string {
+  dispatch(
+    agentType: string,
+    prompt: string,
+    sessionId?: string | null,
+    overrides?: Pick<QueueItem, "model" | "permissionMode" | "provider">
+  ): string {
     const def = getAgentDefinition(agentType);
     if (!def) throw new Error(`Unknown agent type: ${agentType}`);
 
@@ -29,11 +38,11 @@ class AgentManager {
     if (this.active.size >= MAX_CONCURRENT) {
       // Queue — return processId immediately. SSE subscriber will wait for events
       // once the queue drains and the process actually starts.
-      this.queue.push({ processId, agentType, prompt, sessionId });
+      this.queue.push({ processId, agentType, prompt, sessionId, ...overrides });
       return processId;
     }
 
-    this.startProcess(processId, agentType, prompt, sessionId ?? null, def.systemPrompt);
+    this.startProcess(processId, agentType, prompt, sessionId ?? null, def.systemPrompt, overrides);
     return processId;
   }
 
@@ -42,7 +51,8 @@ class AgentManager {
     agentType: string,
     prompt: string,
     sessionId: string | null,
-    systemPrompt: string
+    systemPrompt: string,
+    overrides?: Pick<QueueItem, "model" | "permissionMode" | "provider">
   ): void {
     const def = getAgentDefinition(agentType)!;
 
@@ -50,8 +60,9 @@ class AgentManager {
       agentType,
       prompt,
       sessionId,
-      model: def.model,
-      permissionMode: def.permissionMode,
+      model: overrides?.model ?? def.model,
+      permissionMode: overrides?.permissionMode ?? def.permissionMode,
+      provider: overrides?.provider,
       systemPrompt,
       contextDirs: def.contextDirs,
     });
@@ -150,7 +161,12 @@ class AgentManager {
           next.agentType,
           next.prompt,
           next.sessionId ?? null,
-          def.systemPrompt
+          def.systemPrompt,
+          {
+            model: next.model,
+            permissionMode: next.permissionMode,
+            provider: next.provider,
+          }
         );
       } else {
         // Unknown agent type in queue — emit error and skip

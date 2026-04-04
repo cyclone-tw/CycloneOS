@@ -19,6 +19,7 @@ export interface ChatMessage {
 }
 
 export type PermissionMode = "acceptEdits" | "bypassPermissions" | "default";
+export type AgentCliProvider = "claude" | "codex";
 
 export interface SessionInfo {
   id: string;
@@ -42,6 +43,8 @@ export interface ClaudeStreamEvent {
 
 // --- Shared model type ---
 export type ClaudeModel = "opus" | "sonnet" | "haiku";
+export type CodexModel = "gpt-5" | "gpt-5-mini" | "gpt-5-codex";
+export type AgentModel = ClaudeModel | CodexModel | (string & {});
 
 // --- Agent-related types (Phase 1) ---
 
@@ -50,6 +53,7 @@ export interface AgentTab {
   agentType: string;
   status: "idle" | "streaming" | "queued" | "error";
   sessionId: string | null;
+  provider: AgentCliProvider | null;
   processId: string | null;
 }
 

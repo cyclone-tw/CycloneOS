@@ -2,6 +2,7 @@
 import { cleanClaudeOutput, fixJsonControlChars, repairTruncatedJson } from "@/lib/documents-utils";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { getPlugin, getAllPlugins } from "@/lib/slide-templates";
+import type { AgentCliProvider } from "@/types/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,15 +62,17 @@ async function handlePerSlideGeneration(
   slideId: string,
   slideContent: unknown,
   presentationTitle: string,
+  requestedProvider?: AgentCliProvider,
+  model?: string,
 ): Promise<Response> {
   const prompt = buildPerSlidePrompt(action, slideContent, presentationTitle);
-  const provider = getLLMProvider();
+  const provider = getLLMProvider(requestedProvider);
 
   let accumulated = "";
   try {
     for await (const event of provider.stream({
       prompt,
-      model: "sonnet",
+      model,
       stdinPrompt: true,
       noMcp: true,
       noVault: true,
@@ -146,7 +149,7 @@ ${variantsList}
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { action, slideId, slideContent, presentationTitle } = body;
+  const { action, slideId, slideContent, presentationTitle, provider: requestedProvider, model } = body;
 
   // --- Per-slide generation (non-SSE) ---
   if (action === "generate-notes" || action === "generate-image-prompt") {
@@ -161,6 +164,8 @@ export async function POST(request: Request) {
       slideId,
       slideContent,
       presentationTitle || "Untitled Presentation",
+      requestedProvider,
+      model,
     );
   }
 
@@ -177,7 +182,7 @@ export async function POST(request: Request) {
   const outlineJson = JSON.stringify(outline, null, 2);
   const prompt = buildRefinePrompt(outlineJson, message, targetSlideId);
 
-  const provider = getLLMProvider();
+  const provider = getLLMProvider(requestedProvider);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -194,7 +199,7 @@ export async function POST(request: Request) {
       try {
         for await (const event of provider.stream({
           prompt,
-          model: "sonnet",
+          model,
           stdinPrompt: true,
           noMcp: true,
           noVault: true,

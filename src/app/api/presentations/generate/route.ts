@@ -4,9 +4,18 @@ import { readFile } from "fs/promises";
 import { cleanClaudeOutput, fixJsonControlChars, repairTruncatedJson } from "@/lib/documents-utils";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { buildPromptDecisionTree, buildContentFieldsTable, getPlugin } from "@/lib/slide-templates";
+import type { AgentCliProvider } from "@/types/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+interface GenerateRequestBody {
+  sources?: Array<{ path: string; textContent?: string; type?: string; name?: string }>;
+  instructions?: string;
+  theme?: string;
+  provider?: AgentCliProvider;
+  model?: string;
+}
 
 /** Read source contents server-side and embed in prompt.
  *  Sources with textContent (text/research) use it directly; file sources read from disk.
@@ -106,7 +115,13 @@ Rules:
 </format>`;
 
 export async function POST(request: Request) {
-  const { sources = [], instructions = "", theme } = await request.json();
+  const {
+    sources = [],
+    instructions = "",
+    theme,
+    provider: requestedProvider,
+    model,
+  } = (await request.json()) as GenerateRequestBody;
 
   // Import getThemeById to resolve theme info for the prompt
   const { getThemeById } = await import("@/lib/presentation-themes");
@@ -122,7 +137,7 @@ export async function POST(request: Request) {
     themeObj?.canvaStylePrompt,
   );
 
-  const provider = getLLMProvider();
+  const provider = getLLMProvider(requestedProvider);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -137,7 +152,7 @@ export async function POST(request: Request) {
       try {
         for await (const event of provider.stream({
           prompt,
-          model: "sonnet",
+          model,
           stdinPrompt: true,
           noMcp: true,
           noVault: true,

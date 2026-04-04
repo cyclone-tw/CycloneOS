@@ -10,6 +10,7 @@ import { cleanClaudeOutput } from "@/lib/documents-utils";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { markdownToDocx, markdownToPdfHtml, markdownToXlsx } from "@/lib/document-converters";
 import { PATHS, expandHome, generateFileName, extractSummary } from "@/config/paths-config";
+import type { AgentCliProvider } from "@/types/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,8 @@ interface ProcessRequest {
   outputFormats: string[];
   outputPath: string;
   claudeSessionId?: string | null;
+  provider?: AgentCliProvider;
+  model?: string;
 }
 
 
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { sources, taskDescription, outputFormats, outputPath, claudeSessionId } = body;
+  const { sources, taskDescription, outputFormats, outputPath, claudeSessionId, provider: requestedProvider, model } = body;
 
   if (!sources?.length) {
     return Response.json({ error: "No sources provided" }, { status: 400 });
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
     ].join("\n");
   }
 
-  const provider = getLLMProvider();
+  const provider = getLLMProvider(requestedProvider);
   const shouldSaveMd = outputFormats?.includes("md");
   const shouldSaveDocx = outputFormats?.includes("docx") && outputPath;
   const shouldSavePdf = outputFormats?.includes("pdf") && outputPath;
@@ -87,7 +90,7 @@ export async function POST(request: NextRequest) {
       try {
         for await (const event of provider.stream({
           prompt,
-          model: "sonnet",
+          model,
           stdinPrompt: true,
           noMcp: true,
           noVault: true,

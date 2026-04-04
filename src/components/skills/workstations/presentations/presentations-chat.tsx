@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { usePresentationsStore, type SlideOutline } from "@/stores/presentations-store";
+import { useAgentStore } from "@/stores/agent-store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -20,6 +21,7 @@ export function PresentationsChat() {
   const messages = session?.chatHistory ?? [];
   const slides = session?.outline.slides ?? [];
   const hasOutline = slides.length > 0;
+  const { provider, model } = useAgentStore();
 
   const [input, setInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);
@@ -51,7 +53,9 @@ export function PresentationsChat() {
           outline: session.outline,
           message: userMessage,
           targetSlideId,
-          claudeSessionId: session.claudeSessionId,
+          claudeSessionId: session.sessionProvider === provider ? session.claudeSessionId : null,
+          provider,
+          model,
         }),
       });
 
@@ -97,7 +101,7 @@ export function PresentationsChat() {
           try {
             if (eventType === "session") {
               const parsed = JSON.parse(dataLine);
-              if (parsed.sessionId) setClaudeSessionId(parsed.sessionId);
+              if (parsed.sessionId) setClaudeSessionId(parsed.sessionId, provider);
             } else if (eventType === "outline") {
               const parsed = JSON.parse(dataLine);
               const outline = (parsed.outline ?? parsed) as SlideOutline;
@@ -129,7 +133,7 @@ export function PresentationsChat() {
       setIsRefining(false);
       inputRef.current?.focus();
     }
-  }, [session, input, isRefining, addChatMessage, setOutline, setClaudeSessionId, setError]);
+  }, [session, input, isRefining, addChatMessage, setOutline, setClaudeSessionId, setError, provider, model]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -149,7 +153,7 @@ export function PresentationsChat() {
             </span>
           )}
           {session?.claudeSessionId && (
-            <span className="text-[11px] text-cy-muted/40">session 已建立 · sonnet</span>
+            <span className="text-[11px] text-cy-muted/40">session 已建立 · {provider} · {model}</span>
           )}
         </div>
       </div>

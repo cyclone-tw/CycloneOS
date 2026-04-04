@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { SourceItem } from "./documents-store";
 import { ANIMATION_DEFAULTS } from "@/lib/slide-animation-defaults";
+import type { AgentCliProvider } from "@/types/chat";
 
 // --- Types ---
 
@@ -170,6 +171,7 @@ export interface PresentationSession {
   selectedSlideId: string | null;
   slideSettings: SlideSettings;
   claudeSessionId?: string;
+  sessionProvider?: AgentCliProvider | null;
   createdAt: number;
 }
 
@@ -232,7 +234,7 @@ interface PresentationsState {
 
   // Chat
   addChatMessage: (msg: Omit<ChatMessage, "id" | "timestamp">) => void;
-  setClaudeSessionId: (id: string) => void;
+  setClaudeSessionId: (id: string, provider: AgentCliProvider) => void;
 }
 
 function generateId(): string {
@@ -293,6 +295,7 @@ export const usePresentationsStore = create<PresentationsState>()(
           aspectRatio: "16:9",
           selectedSlideId: null,
           slideSettings: { ...DEFAULT_SLIDE_SETTINGS, customParams: { ...DEFAULT_CUSTOM_PARAMS } },
+          sessionProvider: null,
           createdAt: Date.now(),
         };
         set((state) => ({
@@ -700,11 +703,12 @@ export const usePresentationsStore = create<PresentationsState>()(
           })),
         })),
 
-      setClaudeSessionId: (claudeSessionId) =>
+      setClaudeSessionId: (claudeSessionId, provider) =>
         set((state) => ({
           sessions: updateSession(state.sessions, state.activeSessionId, (s) => ({
             ...s,
             claudeSessionId,
+            sessionProvider: provider,
           })),
         })),
 

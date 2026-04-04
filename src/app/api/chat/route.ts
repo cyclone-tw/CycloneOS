@@ -4,15 +4,76 @@ import { spawnClaude } from "@/lib/claude-bridge";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isIgnorableCliStderr(text: string): boolean {
+  return (
+    text === "Reading additional input from stdin..." ||
+    text.startsWith("WARNING: proceeding, even though we could not update PATH:")
+  );
+}
+
+function extractCodexText(event: Record<string, unknown>): string[] {
+  const results: string[] = [];
+  const seen = new Set<string>();
+
+  const push = (value: unknown) => {
+    if (typeof value !== "string") return;
+    const text = value.trim();
+    if (!text || seen.has(text)) return;
+    seen.add(text);
+    results.push(value);
+  };
+
+  const visit = (value: unknown): void => {
+    if (!value) return;
+
+    if (typeof value === "string") {
+      push(value);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+
+    if (typeof value !== "object") return;
+
+    const record = value as Record<string, unknown>;
+
+    if (record.type === "reasoning") return;
+
+    if (typeof record.delta === "string") push(record.delta);
+    if (typeof record.text === "string") push(record.text);
+
+    const textValue = record.text;
+    if (
+      textValue &&
+      typeof textValue === "object" &&
+      "value" in (textValue as Record<string, unknown>)
+    ) {
+      push((textValue as Record<string, unknown>).value);
+    }
+
+    visit(record.delta);
+    visit(record.message);
+    visit(record.content);
+    visit(record.item);
+    visit(record.output);
+  };
+
+  visit(event);
+  return results;
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { prompt, sessionId, permissionMode, model } = body;
+  const { prompt, sessionId, permissionMode, model, provider } = body;
 
   if (!prompt || typeof prompt !== "string") {
     return new Response("Missing prompt", { status: 400 });
   }
 
-  const proc = spawnClaude({ prompt, sessionId, permissionMode, model });
+  const proc = spawnClaude({ prompt, sessionId, permissionMode, model, provider });
 
   const stream = new ReadableStream({
     start(controller) {
@@ -41,6 +102,26 @@ export async function POST(req: NextRequest) {
           if (!line.trim()) continue;
           try {
             const event = JSON.parse(line);
+
+            const eventType = typeof event.type === "string" ? event.type : "";
+
+            if (eventType === "thread.started" && typeof event.thread_id === "string") {
+              sendSSE("session", "", { sessionId: event.thread_id });
+            }
+
+            for (const text of extractCodexText(event)) {
+              sendSSE("text", text);
+            }
+
+            if (eventType === "error") {
+              const message =
+                typeof event.message === "string"
+                  ? event.message
+                  : typeof event.error === "string"
+                    ? event.error
+                    : null;
+              if (message) sendSSE("error", message);
+            }
 
             // Extract session ID from init event
             if (event.type === "system" && event.subtype === "init" && event.session_id) {
@@ -72,7 +153,7 @@ export async function POST(req: NextRequest) {
 
       proc.stderr?.on("data", (chunk: Buffer) => {
         const text = chunk.toString().trim();
-        if (text) sendSSE("error", text);
+        if (text && !isIgnorableCliStderr(text)) sendSSE("error", text);
       });
 
       proc.on("close", (code) => {
@@ -81,7 +162,7 @@ export async function POST(req: NextRequest) {
       });
 
       proc.on("error", (err) => {
-        sendSSE("error", `Failed to start claude: ${err.message}`);
+        sendSSE("error", `Failed to start agent CLI: ${err.message}`);
         cleanup();
       });
 

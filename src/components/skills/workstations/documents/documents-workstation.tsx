@@ -7,6 +7,7 @@ import { useDocumentsStore } from "@/stores/documents-store";
 import { DocumentsSourcePanel } from "./documents-source-panel";
 import { DocumentsPreview } from "./documents-preview";
 import { DocumentsChat } from "./documents-chat";
+import { WorkstationLLMControls } from "../shared/workstation-llm-controls";
 
 export function DocumentsWorkstation() {
   const { setActiveWorkstation } = useAppStore();
@@ -59,8 +60,9 @@ export function DocumentsWorkstation() {
         </button>
         <span className="text-lg">📄</span>
         <h1 className="text-lg font-bold text-cy-text">Documents 工作站</h1>
+        <WorkstationLLMControls />
         {error && (
-          <span className="ml-auto rounded bg-cy-error/20 px-2 py-0.5 text-xs text-cy-error">
+          <span className="rounded bg-cy-error/20 px-2 py-0.5 text-xs text-cy-error">
             {error}
           </span>
         )}

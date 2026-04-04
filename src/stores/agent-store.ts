@@ -1,5 +1,12 @@
 import { create } from "zustand";
-import type { ChatMessage, AgentTab, ActivityEvent, PermissionMode, ClaudeModel } from "@/types/chat";
+import type {
+  ChatMessage,
+  AgentTab,
+  ActivityEvent,
+  PermissionMode,
+  AgentCliProvider,
+  AgentModel,
+} from "@/types/chat";
 
 const MAX_ACTIVITIES = 200;
 
@@ -19,8 +26,9 @@ interface AgentStoreState {
   isHistoryOpen: boolean;
 
   // Global settings (single source of truth — Phase 3 complete)
+  provider: AgentCliProvider;
   permissionMode: PermissionMode;
-  model: ClaudeModel;
+  model: AgentModel;
   enterToSend: boolean;
 
   // Actions: tabs
@@ -29,7 +37,7 @@ interface AgentStoreState {
   setActiveTab: (tabId: string) => void;
   setTabStatus: (tabId: string, status: AgentTab["status"]) => void;
   setTabProcessId: (tabId: string, processId: string | null) => void;
-  setTabSessionId: (tabId: string, sessionId: string) => void;
+  setTabSessionId: (tabId: string, sessionId: string, provider: AgentCliProvider) => void;
 
   // Actions: messages
   addMessage: (tabId: string, msg: ChatMessage) => void;
@@ -44,20 +52,22 @@ interface AgentStoreState {
   toggleHistory: () => void;
 
   // Actions: settings
+  setProvider: (provider: AgentCliProvider) => void;
   setPermissionMode: (mode: PermissionMode) => void;
-  setModel: (model: ClaudeModel) => void;
+  setModel: (model: AgentModel) => void;
   setEnterToSend: (v: boolean) => void;
 }
 
 const DEFAULT_TAB_ID = "default-general";
 
 export const useAgentStore = create<AgentStoreState>((set) => ({
-  tabs: [{ id: DEFAULT_TAB_ID, agentType: "general", status: "idle", sessionId: null, processId: null }],
+  tabs: [{ id: DEFAULT_TAB_ID, agentType: "general", status: "idle", sessionId: null, provider: null, processId: null }],
   activeTabId: DEFAULT_TAB_ID,
   messagesByTab: { [DEFAULT_TAB_ID]: [] },
   activities: [],
   isActivityOpen: false,
   isHistoryOpen: false,
+  provider: "claude",
   permissionMode: "acceptEdits",
   model: "sonnet",
   enterToSend: true,
@@ -65,7 +75,7 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
   addTab: (agentType) => {
     const id = crypto.randomUUID().slice(0, 8);
     set((s) => ({
-      tabs: [...s.tabs, { id, agentType, status: "idle", sessionId: null, processId: null }],
+      tabs: [...s.tabs, { id, agentType, status: "idle", sessionId: null, provider: null, processId: null }],
       activeTabId: id,
       messagesByTab: { ...s.messagesByTab, [id]: [] },
     }));
@@ -97,9 +107,9 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
       tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, processId } : t)),
     })),
 
-  setTabSessionId: (tabId, sessionId) =>
+  setTabSessionId: (tabId, sessionId, provider) =>
     set((s) => ({
-      tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, sessionId } : t)),
+      tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, sessionId, provider } : t)),
     })),
 
   addMessage: (tabId, msg) =>
@@ -134,6 +144,11 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
   toggleActivity: () => set((s) => ({ isActivityOpen: !s.isActivityOpen })),
   toggleHistory: () => set((s) => ({ isHistoryOpen: !s.isHistoryOpen })),
 
+  setProvider: (provider) =>
+    set({
+      provider,
+      model: provider === "codex" ? "gpt-5" : "sonnet",
+    }),
   setPermissionMode: (mode) => set({ permissionMode: mode }),
   setModel: (model) => set({ model }),
   setEnterToSend: (v) => set({ enterToSend: v }),

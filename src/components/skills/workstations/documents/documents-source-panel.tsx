@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Play, Loader2, Sparkles } from "lucide-react";
 import { useDocumentsStore } from "@/stores/documents-store";
+import { useAgentStore } from "@/stores/agent-store";
 import { cleanClaudeOutput } from "@/lib/documents-utils";
 import { SourceList } from "./source-list";
 import { OutputConfig } from "./output-config";
@@ -12,12 +13,13 @@ export function DocumentsSourcePanel() {
     useDocumentsStore();
   const [taskDesc, setTaskDesc] = useState("");
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const { provider, model } = useAgentStore();
 
   const sources = currentSession?.sources ?? [];
   const formats = currentSession?.outputFormats ?? [];
   const canProcess = sources.length > 0 && formats.length > 0 && !isProcessing;
   const hasChat = (currentSession?.chatHistory.length ?? 0) > 0;
-  const hasSession = !!currentSession?.claudeSessionId;
+  const hasSession = !!currentSession?.claudeSessionId && currentSession?.sessionProvider === provider;
 
   // Summarize chat history into a task description
   const handleSummarize = async () => {
@@ -38,7 +40,9 @@ export function DocumentsSourcePanel() {
           ].join(""),
           outputFormats: [],
           outputPath: "",
-          claudeSessionId: currentSession.claudeSessionId,
+          claudeSessionId: currentSession.sessionProvider === provider ? currentSession.claudeSessionId : null,
+          provider,
+          model,
         }),
       });
 
@@ -63,7 +67,7 @@ export function DocumentsSourcePanel() {
             const event = JSON.parse(line.slice(6));
             if (event.type === "text") result += event.content;
             else if (event.type === "session" && event.sessionId) {
-              setClaudeSessionId(event.sessionId);
+              setClaudeSessionId(event.sessionId, provider);
             }
           } catch { /* skip */ }
         }
@@ -94,7 +98,9 @@ export function DocumentsSourcePanel() {
           outputFormats: currentSession.outputFormats,
           outputPath: currentSession.outputPath,
           // Use existing session if available — AI already has file context
-          claudeSessionId: currentSession.claudeSessionId,
+          claudeSessionId: currentSession.sessionProvider === provider ? currentSession.claudeSessionId : null,
+          provider,
+          model,
         }),
       });
 
@@ -125,7 +131,7 @@ export function DocumentsSourcePanel() {
             if (event.type === "text") {
               appendOutputContent(event.content);
             } else if (event.type === "session" && event.sessionId) {
-              setClaudeSessionId(event.sessionId);
+              setClaudeSessionId(event.sessionId, provider);
             } else if (event.type === "saved" && event.path) {
               appendOutputContent(`\n\n---\n📁 已儲存至：${event.path}\n`);
             } else if (event.type === "error") {

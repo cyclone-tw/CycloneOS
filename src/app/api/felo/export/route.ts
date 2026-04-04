@@ -10,12 +10,27 @@ import { join, resolve } from "path";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { markdownToDocx, markdownToXlsx } from "@/lib/document-converters";
 import { PATHS, generateFileName, extractSummary } from "@/config/paths-config";
+import type { AgentCliProvider } from "@/types/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { content, format, instruction, outputPath } = await req.json();
+  const {
+    content,
+    format,
+    instruction,
+    outputPath,
+    provider: requestedProvider,
+    model,
+  } = (await req.json()) as {
+    content: string;
+    format: string;
+    instruction?: string;
+    outputPath?: string;
+    provider?: AgentCliProvider;
+    model?: string;
+  };
 
   if (!content || typeof content !== "string") {
     return Response.json({ error: "content is required" }, { status: 400 });
@@ -30,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     // If user gave a custom instruction, let LLM process the content first
     if (instruction && instruction.trim()) {
-      const provider = getLLMProvider();
+      const provider = getLLMProvider(requestedProvider);
       const prompt = `以下是一段內容：
 
 <content>
@@ -44,7 +59,7 @@ ${content}
       let result = "";
       for await (const event of provider.stream({
         prompt,
-        model: "sonnet",
+        model,
         stdinPrompt: true,
         noMcp: true,
         noVault: true,

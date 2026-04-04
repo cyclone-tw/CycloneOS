@@ -1,13 +1,18 @@
 import { createJob } from "@/lib/yt-notes/job-manager";
 import { parseYouTubeUrl } from "@/lib/yt-notes/youtube-dl";
 import { runPipeline } from "@/lib/yt-notes/pipeline";
+import type { AgentCliProvider } from "@/types/chat";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const { url } = (await request.json()) as { url: string };
+    const { url, provider, model } = (await request.json()) as {
+      url: string;
+      provider?: AgentCliProvider;
+      model?: string;
+    };
 
     if (!url || !parseYouTubeUrl(url)) {
       return Response.json(
@@ -19,7 +24,7 @@ export async function POST(request: Request) {
     const job = createJob(url);
 
     // Fire and forget — pipeline runs in background
-    runPipeline(job).catch((err) =>
+    runPipeline(job, { provider, model }).catch((err) =>
       console.error("[transcribe/youtube] Pipeline error:", err)
     );
 

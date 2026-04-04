@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { Loader2, Send, Wrench } from "lucide-react";
 import { useFeloOutputStore } from "@/stores/felo-output-store";
+import { useAgentStore } from "@/stores/agent-store";
 import { FeloShortcuts } from "./felo-shortcuts";
 
 interface ChatMessage {
@@ -20,6 +21,7 @@ interface ChatMessage {
 }
 
 export function FeloChat() {
+  const { provider, model } = useAgentStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -185,6 +187,8 @@ export function FeloChat() {
           content: msg.content,
           format,
           instruction: instruction || undefined,
+          provider,
+          model,
         }),
       });
 
@@ -219,7 +223,7 @@ export function FeloChat() {
     } finally {
       setExportingId(null);
     }
-  }, [messages, addOutput]);
+  }, [messages, addOutput, provider, model]);
 
   return (
     <div className="flex h-full flex-col">

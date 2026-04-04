@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useAgentStore } from "@/stores/agent-store";
 import { PermissionBadge } from "./permission-badge";
 import { ModelSelector } from "./model-selector";
+import { ProviderSelector } from "./provider-selector";
 import { Square, ArrowUp, X, Paperclip, FileText, Image as ImageIcon, Film, Music, FileCode } from "lucide-react";
 import type { FileAttachment } from "@/types/chat";
 
@@ -364,6 +365,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
 
       {/* Controls row */}
       <div className="mt-1.5 flex items-center gap-3">
+        <ProviderSelector />
         <PermissionBadge />
         <ModelSelector />
         <div className="flex-1" />

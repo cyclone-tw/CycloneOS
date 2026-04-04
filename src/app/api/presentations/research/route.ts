@@ -6,12 +6,17 @@
 import { NextRequest } from "next/server";
 import { getLLMProvider } from "@/lib/llm-provider";
 import { feloSearch } from "@/lib/felo/search";
+import type { AgentCliProvider } from "@/types/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { query } = await req.json();
+  const { query, provider: requestedProvider, model } = (await req.json()) as {
+    query: string;
+    provider?: AgentCliProvider;
+    model?: string;
+  };
 
   if (!query || typeof query !== "string") {
     return Response.json({ error: "query is required" }, { status: 400 });
@@ -70,13 +75,13 @@ ${resourcesText}
 
 只輸出上述格式的 markdown，不要加其他說明。`;
 
-  const provider = getLLMProvider();
+  const provider = getLLMProvider(requestedProvider);
 
   let accumulated = "";
   try {
     for await (const event of provider.stream({
       prompt: synthesisPrompt,
-      model: "sonnet",
+      model,
       stdinPrompt: true,
       noMcp: true,
       noVault: true,

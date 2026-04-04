@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Play, Loader2, ClipboardPaste, Search, FolderOpen } from "lucide-react";
 import { usePresentationsStore, type SlideOutline } from "@/stores/presentations-store";
+import { useAgentStore } from "@/stores/agent-store";
 import { SharedSourceList } from "../shared/source-list";
 import { SharedSourcePickerModal } from "../shared/source-picker-modal";
 import { RendererPicker } from "./renderer-picker";
@@ -37,6 +38,7 @@ export function PresentationsSourcePanel() {
   const [isResearching, setIsResearching] = useState(false);
   const [importResearchOpen, setImportResearchOpen] = useState(false);
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const { provider, model } = useAgentStore();
 
   const sources = session?.sources ?? [];
   const aspectRatio = session?.aspectRatio ?? "16:9";
@@ -70,7 +72,7 @@ export function PresentationsSourcePanel() {
       const res = await fetch("/api/presentations/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: researchQuery.trim() }),
+        body: JSON.stringify({ query: researchQuery.trim(), provider, model }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Research failed" }));
@@ -157,7 +159,9 @@ export function PresentationsSourcePanel() {
           theme: session.outline.theme,
           renderer: session.renderer,
           aspectRatio: session.aspectRatio,
-          claudeSessionId: session.claudeSessionId,
+          claudeSessionId: session.sessionProvider === provider ? session.claudeSessionId : null,
+          provider,
+          model,
         }),
       });
 
@@ -209,7 +213,7 @@ export function PresentationsSourcePanel() {
           try {
             if (eventType === "session") {
               const parsed = JSON.parse(dataLine);
-              if (parsed.sessionId) setClaudeSessionId(parsed.sessionId);
+              if (parsed.sessionId) setClaudeSessionId(parsed.sessionId, provider);
             } else if (eventType === "outline") {
               const parsed = JSON.parse(dataLine);
               const outline = (parsed.outline ?? parsed) as SlideOutline;
@@ -229,7 +233,7 @@ export function PresentationsSourcePanel() {
               try {
                 const parsed = JSON.parse(dataLine);
                 if (parsed.type === "session" && parsed.sessionId) {
-                  setClaudeSessionId(parsed.sessionId);
+                  setClaudeSessionId(parsed.sessionId, provider);
                 } else if (parsed.type === "outline") {
                   const ol = parsed.outline as SlideOutline;
                   if (!ol.theme && session.outline.theme) {

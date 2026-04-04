@@ -9,6 +9,7 @@ import { OutlineEditor } from "./outline-editor";
 import { SlidePreview } from "./slide-preview";
 import { PresentationsChat } from "./presentations-chat";
 import { StyleSettingsPanel } from "./style-settings-panel";
+import { WorkstationLLMControls } from "../shared/workstation-llm-controls";
 
 export function PresentationsWorkstation() {
   const { setActiveWorkstation } = useAppStore();
@@ -99,8 +100,9 @@ export function PresentationsWorkstation() {
         </button>
         <span className="text-lg">📊</span>
         <h1 className="text-lg font-bold text-cy-text">簡報工作站</h1>
+        <WorkstationLLMControls />
         {error && (
-          <span className="ml-auto rounded bg-cy-error/20 px-2 py-0.5 text-xs text-cy-error">
+          <span className="rounded bg-cy-error/20 px-2 py-0.5 text-xs text-cy-error">
             {error}
           </span>
         )}

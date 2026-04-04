@@ -1,6 +1,7 @@
 import { getLLMProvider } from "@/lib/llm-provider";
 import { buildSummaryPrompt } from "./prompts";
 import type { VideoMeta } from "./types";
+import type { AgentCliProvider } from "@/types/chat";
 
 export interface SummaryResult {
   summaryMarkdown: string;
@@ -10,14 +11,16 @@ export interface SummaryResult {
 /** Generate summary using LLM provider */
 export async function generateSummary(
   meta: VideoMeta,
-  transcript: string
+  transcript: string,
+  options?: { provider?: AgentCliProvider; model?: string }
 ): Promise<SummaryResult> {
-  const provider = getLLMProvider();
+  const provider = getLLMProvider(options?.provider);
   const prompt = buildSummaryPrompt(meta, transcript);
 
   let fullText = "";
   for await (const event of provider.stream({
     prompt,
+    model: options?.model,
     stdinPrompt: true,
     noMcp: true,
     noVault: true,

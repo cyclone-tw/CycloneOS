@@ -13,9 +13,13 @@ export function ChatPanel() {
     tabs, activeTabId, isActivityOpen, messagesByTab,
     addMessage: addAgentMessage, appendToLastAssistant: appendAgentText,
     setTabStatus, setTabProcessId, setTabSessionId, addActivity,
+    provider, model, permissionMode,
   } = useAgentStore();
 
-  const [claudeOk, setClaudeOk] = useState(true);
+  const [providerHealth, setProviderHealth] = useState<Record<string, boolean>>({
+    claude: true,
+    codex: true,
+  });
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -24,8 +28,8 @@ export function ChatPanel() {
   useEffect(() => {
     fetch("/api/health")
       .then((r) => r.json())
-      .then((d) => setClaudeOk(d.claude))
-      .catch(() => setClaudeOk(false));
+      .then((d) => setProviderHealth(d.providers ?? { claude: true, codex: true }))
+      .catch(() => setProviderHealth({ claude: false, codex: false }));
   }, []);
 
   const handleStop = useCallback(() => {
@@ -55,6 +59,7 @@ export function ChatPanel() {
       const tabId = useAgentStore.getState().activeTabId;
       const tab = useAgentStore.getState().tabs.find((t) => t.id === tabId);
       if (!tab) return;
+      const resumeSessionId = tab.provider === provider ? tab.sessionId : null;
 
       // Build prompt with file paths so Claude can Read them
       let prompt = text;
@@ -95,7 +100,10 @@ export function ChatPanel() {
           body: JSON.stringify({
             agentType: tab.agentType,
             prompt,
-            sessionId: tab.sessionId,
+            sessionId: resumeSessionId,
+            provider,
+            model,
+            permissionMode,
           }),
         });
 
@@ -150,7 +158,7 @@ export function ChatPanel() {
                   break;
                 case "session":
                   if (event.sessionId) {
-                    setTabSessionId(tabId, event.sessionId);
+                    setTabSessionId(tabId, event.sessionId, provider);
                   }
                   break;
                 case "error":
@@ -177,7 +185,7 @@ export function ChatPanel() {
         setTabProcessId(tabId, null);
       }
     },
-    [addAgentMessage, appendAgentText, setTabStatus, setTabProcessId, setTabSessionId, addActivity]
+    [addAgentMessage, appendAgentText, setTabStatus, setTabProcessId, setTabSessionId, addActivity, provider, model, permissionMode]
   );
 
   const messages = messagesByTab[activeTabId] ?? [];
@@ -186,9 +194,9 @@ export function ChatPanel() {
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col bg-cy-card/60 backdrop-blur-sm">
         <AgentTabs />
-        {!claudeOk && (
+        {!providerHealth[provider] && (
           <div className="border-b border-cy-border bg-red-500/5 px-3 py-1">
-            <span className="text-xs text-red-400">● Claude CLI unavailable</span>
+            <span className="text-xs text-red-400">● {provider === "codex" ? "Codex CLI" : "Claude CLI"} unavailable</span>
           </div>
         )}
         <MessageList messages={messages} isStreaming={isStreaming} />
