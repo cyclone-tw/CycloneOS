@@ -110,13 +110,10 @@ function ItemCard({ item }: { item: TaskItem }) {
             <PriorityBadge priority={item.priority} />
           </div>
 
-          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-cy-muted">
+          <div className="mt-0.5 text-[11px] text-cy-muted">
             {item.date && <span>{formatDate(item.date, item.dateEnd)}</span>}
             {item.summary && (
-              <>
-                {item.date && <span>·</span>}
-                <span className="truncate">{item.summary}</span>
-              </>
+              <p className="mt-0.5 text-xs text-cy-muted/80 leading-relaxed">{item.summary}</p>
             )}
           </div>
         </div>
