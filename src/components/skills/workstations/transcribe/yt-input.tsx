@@ -11,7 +11,7 @@ interface YtInputProps {
 export function YtInput({ onSubmit, disabled }: YtInputProps) {
   const [url, setUrl] = useState("");
 
-  const isValid = /(?:youtube\.com\/watch\?v=|youtu\.be\/)/.test(url);
+  const isValid = /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/|v\/)|youtu\.be\/)/.test(url);
 
   const handleSubmit = () => {
     if (isValid && !disabled) {

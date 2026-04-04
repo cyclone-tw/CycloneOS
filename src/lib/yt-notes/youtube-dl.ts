@@ -42,7 +42,7 @@ function formatDuration(seconds: number): string {
 }
 
 /** Sanitize title for filesystem use — keep CJK, alphanumeric, hyphens */
-function sanitizeTitle(title: string): string {
+export function sanitizeTitle(title: string): string {
   return title
     .replace(/[/\\:*?"<>|]/g, "")
     .replace(/\s+/g, "-")

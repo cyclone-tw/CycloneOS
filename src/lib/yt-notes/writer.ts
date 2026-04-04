@@ -2,6 +2,7 @@ import { writeFile } from "fs/promises";
 import { join } from "path";
 import type { VideoMeta } from "./types";
 import type { TranscriptResult } from "./transcriber";
+import { sanitizeTitle } from "./youtube-dl";
 
 /** Write summary markdown with frontmatter to Obsidian */
 export async function writeSummary(
@@ -11,18 +12,18 @@ export async function writeSummary(
   topics: string[],
   hasTranscript: boolean
 ): Promise<string> {
-  const fileName = `${meta.uploadDate}-${sanitize(meta.title)}-摘要.md`;
+  const fileName = `${meta.uploadDate}-${sanitizeTitle(meta.title)}-摘要.md`;
   const filePath = join(outputDir, fileName);
 
-  const topicsYaml = topics.map((t) => `  - "${t}"`).join("\n");
+  const topicsYaml = topics.map((t) => `  - "${yamlEscape(t)}"`).join("\n");
 
   const content = `---
 type: yt-summary
-title: "${meta.title}"
-channel: "${meta.channel}"
-channel_id: "${meta.channelId}"
+title: "${yamlEscape(meta.title)}"
+channel: "${yamlEscape(meta.channel)}"
+channel_id: "${yamlEscape(meta.channelId)}"
 date: ${meta.uploadDate}
-url: "${meta.url}"
+url: "${yamlEscape(meta.url)}"
 lang: ${meta.language}
 duration: "${meta.duration}"
 source: manual
@@ -47,7 +48,7 @@ export async function writeTranscript(
   meta: VideoMeta,
   transcript: TranscriptResult
 ): Promise<string> {
-  const fileName = `${meta.uploadDate}-${sanitize(meta.title)}-逐字稿.md`;
+  const fileName = `${meta.uploadDate}-${sanitizeTitle(meta.title)}-逐字稿.md`;
   const filePath = join(outputDir, fileName);
 
   const body = transcript.segments
@@ -56,10 +57,10 @@ export async function writeTranscript(
 
   const content = `---
 type: yt-transcript
-title: "${meta.title}"
-channel: "${meta.channel}"
+title: "${yamlEscape(meta.title)}"
+channel: "${yamlEscape(meta.channel)}"
 date: ${meta.uploadDate}
-url: "${meta.url}"
+url: "${yamlEscape(meta.url)}"
 source: ${transcript.source}
 ---
 
@@ -72,9 +73,7 @@ ${body}
   return filePath;
 }
 
-function sanitize(title: string): string {
-  return title
-    .replace(/[/\\:*?"<>|]/g, "")
-    .replace(/\s+/g, "-")
-    .slice(0, 80);
+/** Escape special characters for YAML double-quoted strings */
+function yamlEscape(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }

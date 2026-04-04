@@ -12,9 +12,8 @@ export interface TranscriptResult {
   source: "native" | "auto" | "whisper";
 }
 
-/** Parse VTT subtitle file into segments */
-export async function parseVtt(vttPath: string): Promise<TranscriptSegment[]> {
-  const content = await readFile(vttPath, "utf-8");
+/** Parse VTT content string into segments */
+function parseVttContent(content: string): TranscriptSegment[] {
   const segments: TranscriptSegment[] = [];
   const lines = content.split("\n");
   let currentTime = "";
@@ -35,6 +34,12 @@ export async function parseVtt(vttPath: string): Promise<TranscriptSegment[]> {
     segments.push({ start: currentTime, text: clean });
   }
   return segments;
+}
+
+/** Parse VTT subtitle file into segments */
+export async function parseVtt(vttPath: string): Promise<TranscriptSegment[]> {
+  const content = await readFile(vttPath, "utf-8");
+  return parseVttContent(content);
 }
 
 /** Run Whisper on an audio file */
@@ -69,25 +74,7 @@ export async function whisperTranscribe(
     proc.on("error", reject);
   });
 
-  const segments: TranscriptSegment[] = [];
-  const lines = result.split("\n");
-  let currentTime = "";
-
-  for (const line of lines) {
-    const timeMatch = line.match(/^(\d{2}:\d{2}:\d{2})\.\d{3}\s*-->/);
-    if (timeMatch) {
-      currentTime = timeMatch[1];
-      continue;
-    }
-    const clean = line.replace(/<[^>]+>/g, "").trim();
-    if (!clean || clean === "WEBVTT" || /^\d+$/.test(clean)) continue;
-
-    const last = segments[segments.length - 1];
-    if (last && last.text === clean) continue;
-
-    segments.push({ start: currentTime, text: clean });
-  }
-  return segments;
+  return parseVttContent(result);
 }
 
 /** Get transcript: try VTT first, fallback to Whisper */
