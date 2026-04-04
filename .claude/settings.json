@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "qmd": {
+      "type": "url",
+      "url": "http://localhost:8181/mcp"
+    }
+  }
+}
