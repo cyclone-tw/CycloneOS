@@ -1,5 +1,18 @@
 # CycloneOS Changelog
 
+## 2026-04-04
+- 修復 Invalid API Key 問題（移除 .zshrc 無效 ANTHROPIC_API_KEY）
+- 新增手機版 responsive layout（底部導航列 + dashboard/chat 切換）
+- 設定 Tailscale Serve（port 8445）供跨裝置存取
+- 新增 favicon 龍圖示
+- Discord Bot 部署（Claude Code × Discord Channel Plugin）
+- 新增 Discord Bot 開機常駐（tmux + launchd）
+- 接入 QMD MCP server，Bot 可語意搜尋 Obsidian Vault
+- CLAUDE.md 瘦身（195→42 行），拆出 session-log、handoff、changelog 為 slash commands
+- 教育工作站 IEP 模組：whisper 轉寫 + AI 分析 + 從零生成會議記錄 .docx
+- IEP 批次處理：資料夾分類（期初/期末/跨學期/跨學年）自動產出
+- 教育工作站技術設計文件（含法規依據與最佳實踐研究）
+
 ## 2026-04-03
 - 移除所有 /Users/username 硬編碼路徑，改用 homedir()/process.cwd()/PATHS — 系統可移植到其他 Mac
 - Documents 輸出路徑 UI 改善：分別顯示 MD（Obsidian）與二進位檔（Google Drive）存放位置
