@@ -46,10 +46,10 @@ export const SKILLS: SkillCard[] = [
   {
     id: "education",
     name: "教育工作站",
-    description: "IEP・課程計畫・教案・學習單・教材設計",
+    description: "會議記錄・IEP・課程計畫・教案・特推會",
     icon: "🎓",
     type: "workstation",
-    tags: ["IEP", "課程計畫", "教案", "學習單", "特教"],
+    tags: ["IEP", "特推會", "會議記錄", "課程計畫", "教案", "特教"],
   },
   {
     id: "transcribe",
