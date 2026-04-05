@@ -29,7 +29,7 @@ export function EducationWorkstation() {
       </div>
 
       <div className="flex-1 overflow-y-auto py-6">
-        <div className="mx-auto w-full max-w-4xl px-4">
+        <div className="w-full px-2">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {EDUCATION_MODULES.map((mod) => (
               <ModuleCard

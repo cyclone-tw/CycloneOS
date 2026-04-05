@@ -246,7 +246,7 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto py-4">
-        <div className="mx-auto w-full max-w-5xl px-4 space-y-6">
+        <div className="w-full space-y-6">
           {step === 1 && (
             <>
               <MeetingHeaderForm
