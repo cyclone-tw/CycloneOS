@@ -10,6 +10,7 @@ import { DocumentsWorkstation } from "./workstations/documents/documents-worksta
 import { PresentationsWorkstation } from "./workstations/presentations/presentations-workstation";
 import { FeloWorkstation } from "./workstations/felo/felo-workstation";
 import { TranscribeWorkstation } from "./workstations/transcribe/transcribe-workstation";
+import { EducationWorkstation } from "./workstations/education/education-workstation";
 
 export function SkillsPanel() {
   const { activeWorkstation, setActiveWorkstation } = useAppStore();
@@ -57,6 +58,9 @@ export function SkillsPanel() {
     }
     if (activeWorkstation === "transcribe") {
       return <TranscribeWorkstation />;
+    }
+    if (activeWorkstation === "education") {
+      return <EducationWorkstation />;
     }
     return <WorkstationPlaceholder skill={skill} />;
   }
