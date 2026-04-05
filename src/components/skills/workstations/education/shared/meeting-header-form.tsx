@@ -18,7 +18,7 @@ interface MeetingHeaderFormProps {
 
 export function MeetingHeaderForm({ fields, values, onChange }: MeetingHeaderFormProps) {
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {fields.map((field) => (
         <div key={field.key} className="flex items-center gap-3">
           <label className="w-24 shrink-0 text-right text-xs text-cy-muted">

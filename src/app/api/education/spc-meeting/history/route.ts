@@ -1,4 +1,4 @@
-import { fetchSimilarMeetings, fetchPreviousDecisions } from "@/lib/education/spc-history";
+import { fetchSimilarMeetings, fetchPreviousDecisions, fetchNextMeetingNumber } from "@/lib/education/spc-history";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,12 +19,18 @@ export async function GET(request: Request) {
       );
     }
 
+    // Auto-detect next meeting number
+    let nextMeetingNumber: number | undefined;
+    if (yearStr && !numStr) {
+      nextMeetingNumber = await fetchNextMeetingNumber(parseInt(yearStr, 10));
+    }
+
     let records: Awaited<ReturnType<typeof fetchSimilarMeetings>> = [];
     if (type) {
       records = await fetchSimilarMeetings(type, limitStr ? parseInt(limitStr, 10) : 5);
     }
 
-    return Response.json({ records, previousDecisions });
+    return Response.json({ records, previousDecisions, nextMeetingNumber });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     return Response.json({ error: msg }, { status: 500 });

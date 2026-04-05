@@ -69,10 +69,32 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
     mocUpdated?: boolean;
   } | null>(null);
 
-  // Load committee on mount
-  const loadCommittee = useCallback(async () => {
+  // Auto-fill: detect next meeting number + today's date + committee
+  const initPanel = useCallback(async () => {
     const year = parseInt(headerValues.academicYear, 10);
     if (isNaN(year)) return;
+
+    // Fetch next meeting number
+    try {
+      const histRes = await fetch(`/api/education/spc-meeting/history?year=${year}`);
+      const histData = await histRes.json();
+      if (histData.nextMeetingNumber) {
+        setHeaderValues((v) => ({ ...v, meetingNumber: String(histData.nextMeetingNumber) }));
+      }
+    } catch {
+      // ignore
+    }
+
+    // Auto-fill today's date in ROC format
+    const now = new Date();
+    const rocYear = now.getFullYear() - 1911;
+    const rocDate = `${rocYear}年${now.getMonth() + 1}月${now.getDate()}日`;
+    setHeaderValues((v) => ({
+      ...v,
+      meetingDate: v.meetingDate || rocDate,
+    }));
+
+    // Load committee roster
     try {
       const res = await fetch(`/api/education/committee?year=${year}`);
       const data = await res.json();
@@ -89,8 +111,8 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
   }, [headerValues.academicYear]);
 
   useEffect(() => {
-    loadCommittee();
-  }, [loadCommittee]);
+    initPanel();
+  }, [initPanel]);
 
   // Build header field definitions
   const chairOptions = committee.map((m) => ({ label: `${m.title} ${m.name}`, value: m.name }));
@@ -206,12 +228,12 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-1 py-3">
+      <div className="flex items-center gap-1 py-3 overflow-x-auto md:gap-2">
         {STEPS.map((label, i) => (
           <button
             key={i}
             onClick={() => setStep((i + 1) as Step)}
-            className={`rounded-full px-3 py-1 text-xs transition-colors ${
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs transition-colors md:px-4 md:py-2 md:text-sm ${
               step === i + 1
                 ? "bg-cy-accent text-white"
                 : "bg-cy-input/50 text-cy-muted hover:text-cy-text"
@@ -224,7 +246,7 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto py-4">
-        <div className="mx-auto max-w-2xl space-y-6">
+        <div className="mx-auto w-full max-w-5xl px-4 space-y-6">
           {step === 1 && (
             <>
               <MeetingHeaderForm

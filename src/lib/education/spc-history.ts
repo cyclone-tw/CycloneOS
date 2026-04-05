@@ -36,9 +36,9 @@ export async function fetchSimilarMeetings(
     const content = await readFile(join(dir, file), "utf-8");
     const frontmatter = parseFrontmatter(content);
 
-    const topics: string[] = frontmatter.topics ?? [];
+    const topics = (frontmatter.topics as string[] | undefined) ?? [];
     const matchesTopic =
-      topics.some((t: string) => t.includes(topicKeyword)) ||
+      topics.some((t) => t.includes(topicKeyword)) ||
       file.includes(topicKeyword);
 
     if (!matchesTopic) continue;
@@ -47,11 +47,11 @@ export async function fetchSimilarMeetings(
 
     records.push({
       filename: file.replace(".md", ""),
-      date: frontmatter.date ?? "",
+      date: (frontmatter.date as string) ?? "",
       topic: topics.join("、") || file.replace(/^\d+-特推會-\d+-/, "").replace(".md", ""),
       excerpt,
-      academicYear: frontmatter.academic_year ?? 0,
-      meetingNumber: frontmatter.meeting_number ?? 0,
+      academicYear: (frontmatter.academic_year as number) ?? 0,
+      meetingNumber: (frontmatter.meeting_number as number) ?? 0,
     });
   }
 
@@ -80,9 +80,34 @@ export async function fetchPreviousDecisions(
 
   const content = await readFile(join(dir, prevFile), "utf-8");
   const frontmatter = parseFrontmatter(content);
-  const decisions: string[] = frontmatter.decisions ?? [];
+  const decisions = (frontmatter.decisions as string[] | undefined) ?? [];
 
   return decisions.join("\n");
+}
+
+/** Find the next meeting number for a given academic year. */
+export async function fetchNextMeetingNumber(academicYear: number): Promise<number> {
+  const dir = OBSIDIAN_PATHS.spcMeeting;
+  let files: string[];
+  try {
+    files = await readdir(dir);
+  } catch {
+    return 1;
+  }
+
+  const prefix = `${academicYear}-特推會-`;
+  let maxNum = 0;
+
+  for (const file of files) {
+    if (!file.startsWith(prefix) || !file.endsWith(".md")) continue;
+    const match = file.match(/特推會-(\d+)-/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNum) maxNum = num;
+    }
+  }
+
+  return maxNum + 1;
 }
 
 function parseFrontmatter(content: string): Record<string, unknown> {
