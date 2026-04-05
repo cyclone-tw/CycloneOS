@@ -36,66 +36,73 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 
 ---
 
-## 🔜 Next Session: 教育工作站 Dashboard UI + Multi-Provider 收尾
+## 🔜 Next Session: 特推會備會擴展 + 學生資料 Spec + IEP 面板
 
 > 複製以下內容作為新 session 的第一句話，然後刪除此區塊。
 
 ```
-接續 session-04（2026-04-04，Mac Mini）。有兩條主線待續：
+接續 session-06（2026-04-05，Mac Mini）。教育工作站 Phase 1 已完成並合併 main。
 
-## 主線 1：教育工作站 Dashboard UI（優先）
+## 已完成（session-06）
 
-IEP 會議記錄的 Python pipeline 已完成並驗證可行：
-- scripts/education/iep_pipeline.py — 一鍵 pipeline（音檔→whisper→AI分析→從零生成.docx）
-- scripts/education/iep_meeting_generator.py — python-docx 從零生成會議記錄
-- scripts/education/iep_batch.py — 資料夾分類批次處理（期初/期末/跨學期/跨學年）
+教育工作站入口頁 + 特推會會議記錄完整面板：
+- 入口頁：4 個子模組卡片（特推會可用，其餘即將推出）
+- 特推會 4-step 流程：基本資訊→前次決議+業務報告→提案討論→生成下載
+- 委員名冊管理（per 學年度 .md，Obsidian 內可編輯）
+- AI 草擬說明（參考歷史同類會議）
+- 自動推測會議次數 + 今日日期
+- 共用元件（HeaderForm, SectionEditor, StudentPicker, DownloadPanel, HistoryReference）
+- Python --json mode：spc_meeting_core.py 支援 stdin/stdout JSON 與 API route 整合
 
-### 核心設計決策（已確定）
-- 不用佔位符，LLM 自己理解模板結構產出內容
-- 不填入現有模板，從零生成 .docx（無殘留內容）
-- 簽到表留空（現場簽名）
-- 內文 10pt 標楷體
-- 逐字稿存 Obsidian（含 frontmatter）
-- 檔名中間字用○代替（廖祐仁→廖○仁）
-- 日期前綴優先用錄音檔建立日期
+### 關鍵檔案
+- src/components/skills/workstations/education/ — 前端元件（11 個）
+- src/app/api/education/ — API routes（committee, spc-meeting）
+- src/lib/education/ — obsidian-paths, committee-parser, spc-history
+- docs/superpowers/specs/2026-04-05-meeting-workstation-ui-design.md — UI 設計文件
+- docs/superpowers/plans/2026-04-05-meeting-workstation-ui-phase1.md — Phase 1 實作計畫
 
-### 待做
-1. 建立 API route: /api/education/iep-meeting
-2. 建立前端元件：
-   - 音檔上傳/拖曳
-   - 會議類型選擇（期初/期末/跨學期合開/跨學年合開）
-   - 學生姓名、日期等欄位
-   - whisper 進度顯示
-   - AI 分析進度
-   - 預覽 + 下載
-3. 掛進 skills panel 的教育工作站卡片
-4. 雙軌：CLI 批次處理 + Dashboard UI 互動處理
-5. 更多錄音檔測試合開拆分邏輯
+## 三條主線待續（依優先順序）
 
-### 後續模組（設計文件在 docs/specs/education-workstation-design.md）
-- IEP 服務計劃模組
-- 課程計劃模組
-- 教案/一般文件模組
+### 主線 1：特推會備會 + 多格式產出（使用者最新需求）
 
-## 主線 2：Multi-Provider 收尾（session-03 留的）
+使用者希望特推會面板不只產「會後記錄」，也要能產「會前附件」：
+- **參考文件上傳**（C 模式）：會議層級 + 案由層級都可上傳 Word/PDF
+- **開會前附件產出**：.docx / .pdf / GitHub Pages HTML（一頁式會議議程）
+- 專用 GitHub repo，每次會議一個 HTML 靜態頁面
+- 需要另開 spec 設計，memory 裡有詳細記錄（project_spc_meeting_expansion.md）
 
-- extractCodexText 重複定義，需抽成共用模組
-- setLLMProvider/getLLMProvider singleton 問題
-- claude-bridge.ts 和 llm-provider.ts 功能重疊
-- Codex CLI 限制：無 MCP、無 --append-system-prompt
+### 主線 2：學生資料 Spec A
+
+使用者想建立學生個別 .md 檔（存 Obsidian），作為跨模組共用資料層：
+- IEP 會議、特推會、服務計劃、課程計劃都能讀取帶入
+- 資料散落在 IEP 文件、課程計劃分組名單、相關服務申請、鑑定安置資料
+- 需設計 .md 格式（frontmatter 欄位）和整理流程
+
+### 主線 3：IEP 會議面板 Phase 2
+
+共用元件已就位，需新增：
+- AudioUploader（拖曳上傳 .m4a）
+- WhisperProgress（whisper 轉錄進度條，polling）
+- MeetingTypePicker（期初/期末/合開）
+- SplitTabs（合開拆分 tab 切換）
+- API routes：transcribe, analyze, generate
+- 合開拆分：AI 自動偵測 + 可手動標記
+- 設計文件已有：docs/superpowers/specs/2026-04-05-meeting-workstation-ui-design.md
+
+## 遺留事項
+- Multi-Provider 收尾（session-03 留的，低優先）
+- openai module build error 需處理（src/lib/llm-provider.ts）
+- runPython helper 在 draft 和 generate route 重複，可抽共用
+
+## 設計規則（已存 memory）
+- Dashboard 面板必須滿版響應式（不能用 max-w-* 限制）
+- 使用者主要在 Mac Mini 桌面環境操作
 
 ## 環境資訊（Mac Mini）
 - Discord Bot 用 tmux 常駐：tmux attach -t discord-bot
 - Dashboard 用 launchd 常駐：port 3000 / Tailscale 8445
 - QMD MCP 已接入 Claude Code（stdio 模式）
 - whisper medium + LibreOffice 已安裝
-- .zshrc 已移除無效 ANTHROPIC_API_KEY
-
-## 關鍵檔案
-- scripts/education/* — Python pipeline（6 個腳本）
-- docs/specs/education-workstation-design.md — 完整設計文件
-- .claude/commands/{handoff,session-log,changelog}.md — slash commands
-- CLAUDE.md — 已瘦身至 42 行
 ```
 
 ---
