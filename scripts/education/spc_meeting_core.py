@@ -728,3 +728,113 @@ def generate_docx(record: MeetingRecord, output_path: str) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     doc.save(output_path)
     return output_path
+
+
+# ── JSON mode helpers ──
+
+def build_meeting_record(data: dict) -> MeetingRecord:
+    """
+    Convert a JSON input dict (from API route) into a MeetingRecord.
+
+    Expected keys (all optional, sensible defaults applied):
+      academicYear, meetingNumber, date, weekday, timeStart, timeEnd,
+      location, chair, recorder, businessReport, previousTracking,
+      proposals, motions, committee
+
+    Each proposal in `proposals` should be a dict with:
+      type, title, description, decision, students, refDoc
+    """
+    raw_proposals = data.get("proposals", [])
+    proposals = []
+    for p in raw_proposals:
+        proposals.append(Proposal(
+            type=p.get("type", "其他"),
+            title=p.get("title", ""),
+            description=p.get("description", ""),
+            decision=p.get("decision", "（會後填入）"),
+            students=p.get("students", []),
+            ref_doc=p.get("refDoc", p.get("ref_doc", "")),
+        ))
+
+    committee_raw = data.get("committee", [])
+    committee = committee_raw if committee_raw else DEFAULT_COMMITTEE
+
+    return MeetingRecord(
+        academic_year=data.get("academicYear", data.get("academic_year", SCHOOL_DEFAULTS["academic_year"])),
+        meeting_number=data.get("meetingNumber", data.get("meeting_number", 1)),
+        date=data.get("date", ""),
+        weekday=data.get("weekday", ""),
+        time_start=data.get("timeStart", data.get("time_start", "上午08:10")),
+        time_end=data.get("timeEnd", data.get("time_end", "")),
+        location=data.get("location", SCHOOL_DEFAULTS["location"]),
+        chair=data.get("chair", SCHOOL_DEFAULTS["chair"]),
+        recorder=data.get("recorder", SCHOOL_DEFAULTS["recorder"]),
+        business_report=data.get("businessReport", data.get("business_report", "")),
+        previous_tracking=data.get("previousTracking", data.get("previous_tracking", "")),
+        proposals=proposals,
+        motions=data.get("motions", "無"),
+        committee=committee,
+    )
+
+
+def handle_json_mode():
+    """JSON mode: read action + data from stdin, output result to stdout."""
+    data = json.loads(sys.stdin.read())
+    action = data.get("action")
+
+    if action == "draft":
+        # Build a Proposal from the input and call draft_proposal()
+        proposal_type = data.get("proposal_type", "其他")
+        students = data.get("students", [])
+        ref_doc = data.get("ref_doc", "")
+        title = data.get("title", proposal_type)
+
+        proposal = Proposal(
+            type=proposal_type,
+            title=title,
+            students=students,
+            ref_doc=ref_doc,
+        )
+
+        similar = fetch_similar_meetings(proposal_type)
+        description = draft_proposal(proposal, similar)
+
+        print(json.dumps({
+            "title": proposal.title,
+            "description": description,
+        }, ensure_ascii=False))
+
+    elif action == "generate":
+        record = build_meeting_record(data)
+
+        # Determine output path for docx
+        output_dir = data.get("output_dir", os.path.expanduser("~/Downloads"))
+        topics_str = "+".join(p.type for p in record.proposals) if record.proposals else "未分類"
+        docx_filename = (
+            f"{record.academic_year}-特推會-{record.meeting_number:02d}"
+            f"-{topics_str}.docx"
+        )
+        docx_path = os.path.join(output_dir, docx_filename)
+
+        docx_path = generate_docx(record, docx_path)
+        md_path = save_markdown(record)   # also calls update_moc() internally
+        moc_path = os.path.join(OBSIDIAN_SPC_DIR, "MOC-特推會.md")
+        moc_updated = os.path.exists(moc_path)
+
+        print(json.dumps({
+            "docx_path": docx_path,
+            "md_path": md_path,
+            "moc_updated": moc_updated,
+        }, ensure_ascii=False))
+
+    else:
+        print(json.dumps({"error": f"Unknown action: {action}"}), file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    if "--json" in sys.argv:
+        handle_json_mode()
+    else:
+        print("Usage: python3 spc_meeting_core.py --json < input.json")
+        print("Or use spc_meeting_cli.py for interactive mode.")
