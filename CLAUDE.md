@@ -36,52 +36,66 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 
 ---
 
-## 🔜 Next Session: Multi-Provider 收尾 + 程式碼品質
+## 🔜 Next Session: 教育工作站 Dashboard UI + Multi-Provider 收尾
 
 > 複製以下內容作為新 session 的第一句話，然後刪除此區塊。
 
 ```
-接續上次 session（2026-04-04-session-03）。上次完成了 multi-provider LLM 支援（commit e3f3609），這次要收尾和驗證。
+接續 session-04（2026-04-04，Mac Mini）。有兩條主線待續：
 
-## 目前狀態
-CycloneOS 的 LLM 抽象層現在支援三種 provider：
-- ClaudeCLIProvider（預設，spawn claude CLI）
-- CodexCLIProvider（spawn codex CLI）
-- OpenAIProvider（直接呼叫 OpenAI API）
+## 主線 1：教育工作站 Dashboard UI（優先）
 
-Dashboard UI 右下角有 Provider Selector 可切換 Claude CLI / Codex CLI，Model Selector 會根據 provider 動態顯示對應模型。
+IEP 會議記錄的 Python pipeline 已完成並驗證可行：
+- scripts/education/iep_pipeline.py — 一鍵 pipeline（音檔→whisper→AI分析→從零生成.docx）
+- scripts/education/iep_meeting_generator.py — python-docx 從零生成會議記錄
+- scripts/education/iep_batch.py — 資料夾分類批次處理（期初/期末/跨學期/跨學年）
 
-環境變數切換：LLM_PROVIDER=claude|codex|openai, OPENAI_API_KEY, OPENAI_MODEL
+### 核心設計決策（已確定）
+- 不用佔位符，LLM 自己理解模板結構產出內容
+- 不填入現有模板，從零生成 .docx（無殘留內容）
+- 簽到表留空（現場簽名）
+- 內文 10pt 標楷體
+- 逐字稿存 Obsidian（含 frontmatter）
+- 檔名中間字用○代替（廖祐仁→廖○仁）
+- 日期前綴優先用錄音檔建立日期
 
-## 要做的事
+### 待做
+1. 建立 API route: /api/education/iep-meeting
+2. 建立前端元件：
+   - 音檔上傳/拖曳
+   - 會議類型選擇（期初/期末/跨學期合開/跨學年合開）
+   - 學生姓名、日期等欄位
+   - whisper 進度顯示
+   - AI 分析進度
+   - 預覽 + 下載
+3. 掛進 skills panel 的教育工作站卡片
+4. 雙軌：CLI 批次處理 + Dashboard UI 互動處理
+5. 更多錄音檔測試合開拆分邏輯
 
-### 1. 程式碼品質修復
-- `extractCodexText` 函數重複定義在 3 個檔案中（llm-provider.ts、chat/route.ts、local-executor.ts），抽成共用模組
-- `setLLMProvider` 被改成 no-op（`void provider;`），評估是否恢復或移除
-- `getLLMProvider` 每次都 new instance（singleton 被移除），考慮恢復快取
-- `claude-bridge.ts` 和 `llm-provider.ts` 有部分功能重疊（都有 Codex args builder），可統一
+### 後續模組（設計文件在 docs/specs/education-workstation-design.md）
+- IEP 服務計劃模組
+- 課程計劃模組
+- 教案/一般文件模組
 
-### 2. 驗證
-- 用 OpenAI provider 跑一次 yt-notes pipeline（需設定 OPENAI_API_KEY）
-- 在 Dashboard 聊天測試 Codex CLI provider
-- 確認 Obsidian + Notion 輸出正常
+## 主線 2：Multi-Provider 收尾（session-03 留的）
 
-### 3. 清理
-- 評估是否刪除 ~/CycloneOS-codex（主 repo 已有所有改動）
-- 修復 pre-existing build 問題（public/uploads/felo/images symlink）
+- extractCodexText 重複定義，需抽成共用模組
+- setLLMProvider/getLLMProvider singleton 問題
+- claude-bridge.ts 和 llm-provider.ts 功能重疊
+- Codex CLI 限制：無 MCP、無 --append-system-prompt
 
-## 已知限制（Codex CLI）
-- 沒有 MCP 支援 → QMD 搜尋等 MCP 功能不可用
-- 沒有 --append-system-prompt → 改用 prompt 前置拼接（品質可能不同）
-- 沒有 --disallowed-tools → 無法限制工具
-- Session resume 機制不同，待驗證
+## 環境資訊（Mac Mini）
+- Discord Bot 用 tmux 常駐：tmux attach -t discord-bot
+- Dashboard 用 launchd 常駐：port 3000 / Tailscale 8445
+- QMD MCP 已接入 Claude Code（stdio 模式）
+- whisper medium + LibreOffice 已安裝
+- .zshrc 已移除無效 ANTHROPIC_API_KEY
 
 ## 關鍵檔案
-- src/lib/llm-provider.ts — 三種 provider 實作
-- src/lib/claude-bridge.ts — 雙 CLI spawn
-- src/components/chat/provider-selector.tsx — UI 切換元件
-- src/types/chat.ts — AgentCliProvider 型別
-- src/stores/agent-store.ts — provider 狀態管理
+- scripts/education/* — Python pipeline（6 個腳本）
+- docs/specs/education-workstation-design.md — 完整設計文件
+- .claude/commands/{handoff,session-log,changelog}.md — slash commands
+- CLAUDE.md — 已瘦身至 42 行
 ```
 
 ---
