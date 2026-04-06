@@ -18,6 +18,18 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ error: "No images provided" }, { status: 400 });
     }
 
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+    for (const file of files) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        return Response.json({ error: `Invalid file type: ${file.type}` }, { status: 400 });
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        return Response.json({ error: `File too large: ${file.name}` }, { status: 400 });
+      }
+    }
+
     // Build date-based upload directory: public/uploads/social/YYYY-MM-DD/
     const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
     const uploadDir = path.join(process.cwd(), "public", "uploads", "social", today);

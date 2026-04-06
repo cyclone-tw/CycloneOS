@@ -7,6 +7,7 @@ interface DownloadResult {
   docxFilename?: string;
   mdPath?: string;
   mocUpdated?: boolean;
+  htmlUrl?: string;
 }
 
 interface DownloadPanelProps {
@@ -60,6 +61,17 @@ export function DownloadPanel({ result, loading, onGenerate, generateLabel }: Do
           <Check className="h-3.5 w-3.5 text-green-500" />
           MOC 已更新
         </div>
+      )}
+      {result.htmlUrl && (
+        <a
+          href={result.htmlUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-xs text-cy-accent hover:text-cy-accent/80"
+        >
+          <Check className="h-3.5 w-3.5 text-green-500" />
+          GitHub Pages：{result.htmlUrl}
+        </a>
       )}
     </div>
   );

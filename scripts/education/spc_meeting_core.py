@@ -235,7 +235,7 @@ def fetch_previous_decisions(academic_year, meeting_number):
 
 # ── Markdown 輸出 ──
 
-def build_markdown(record: MeetingRecord) -> str:
+def build_markdown(record: MeetingRecord, status: str = "record-generated", mode: str = "record") -> str:
     """生成符合 Obsidian 特推會格式的 Markdown 文件。"""
 
     # 蒐集 topics 和 decisions
@@ -264,6 +264,8 @@ def build_markdown(record: MeetingRecord) -> str:
     else:
         frontmatter_lines.append("decisions:")
     frontmatter_lines.append("tags: [特推會, 會議記錄]")
+    frontmatter_lines.append(f'status: "{status}"')
+    frontmatter_lines.append(f'mode: "{mode}"')
     frontmatter_lines.append("---")
 
     frontmatter = "\n".join(frontmatter_lines)
@@ -336,7 +338,7 @@ def build_markdown(record: MeetingRecord) -> str:
 
 # ── 儲存 Markdown ──
 
-def save_markdown(record: MeetingRecord) -> str:
+def save_markdown(record: MeetingRecord, status: str = "record-generated", mode: str = "record") -> str:
     """儲存 Markdown 至 Obsidian 特推會資料夾，並更新 MOC。"""
     os.makedirs(OBSIDIAN_SPC_DIR, exist_ok=True)
 
@@ -345,7 +347,7 @@ def save_markdown(record: MeetingRecord) -> str:
     filename = f"{record.academic_year}-特推會-{record.meeting_number:02d}-{topics_str}.md"
     filepath = os.path.join(OBSIDIAN_SPC_DIR, filename)
 
-    content = build_markdown(record)
+    content = build_markdown(record, status=status, mode=mode)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
@@ -534,12 +536,54 @@ def draft_proposal(proposal: Proposal, similar: list) -> str:
 # ── 姓名遮蔽 ──
 
 def mask_name(name: str) -> str:
-    """遮蔽姓名中間字（3字→第2字，4字→第2、3字）。"""
+    """遮蔽姓名中間字。"""
+    if len(name) <= 1:
+        return name
+    if len(name) == 2:
+        return name[0] + "○"
     if len(name) == 3:
         return name[0] + "○" + name[2]
-    elif len(name) == 4:
-        return name[0] + "○○" + name[3]
-    return name
+    # 4+ chars: keep first and last
+    return name[0] + "○" * (len(name) - 2) + name[-1]
+
+
+_ADDRESS_RE = re.compile(
+    r"[\u4e00-\u9fff]{1,3}[縣市][\u4e00-\u9fff]{1,4}[鄉鎮市區][\u4e00-\u9fff\d\-號巷弄樓之]+"
+)
+_PHONE_RE = re.compile(
+    r"(?:0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{3,4}|09\d{2}[-\s]?\d{3}[-\s]?\d{3})"
+)
+
+
+def mask_pii(text: str, names: list[str]) -> str:
+    """Mask all PII in text: known names, addresses, phone numbers."""
+    result = text
+    for name in sorted(names, key=len, reverse=True):
+        if name and len(name) >= 2:
+            result = result.replace(name, mask_name(name))
+    result = _ADDRESS_RE.sub("（地址已隱藏）", result)
+    result = _PHONE_RE.sub("（電話已隱藏）", result)
+    return result
+
+
+def collect_names(record) -> list[str]:
+    """Collect all names from a MeetingRecord for PII masking."""
+    names = set()
+    names.add(record.chair)
+    names.add(record.recorder)
+    for m in record.committee:
+        if isinstance(m, dict):
+            names.add(m.get("name", ""))
+        elif hasattr(m, "name"):
+            names.add(m.name)
+    for p in record.proposals:
+        for s in (p.students if p.students else []):
+            if isinstance(s, dict):
+                names.add(s.get("name", ""))
+            elif isinstance(s, str):
+                names.add(s)
+    names.discard("")
+    return list(names)
 
 
 # ── 生成 .docx ──
@@ -554,8 +598,15 @@ def _chinese_num(n: int) -> str:
     return str(n)
 
 
-def generate_docx(record: MeetingRecord, output_path: str) -> str:
+def generate_docx(record: MeetingRecord, output_path: str, mask_names: list[str] | None = None) -> str:
     """從零生成特推會會議記錄 .docx。"""
+
+    def m(text):
+        """Apply PII masking if names provided."""
+        if mask_names and text:
+            return mask_pii(text, mask_names)
+        return text if text else ""
+
     doc = Document()
     setup_page(doc.sections[0])
 
@@ -596,7 +647,7 @@ def generate_docx(record: MeetingRecord, output_path: str) -> str:
     # ── 參、主席 + 記錄 ──
     add_paragraph(
         doc,
-        f"參、主　　席：{record.chair}　　記　錄：{record.recorder}",
+        f"參、主　　席：{m(record.chair)}　　記　錄：{m(record.recorder)}",
         size=BODY_SIZE,
     )
 
@@ -644,11 +695,11 @@ def generate_docx(record: MeetingRecord, output_path: str) -> str:
             add_paragraph(doc, "【說明】", size=BODY_SIZE, bold=True)
             add_paragraph(
                 doc,
-                proposal.description if proposal.description else "（待填）",
+                m(proposal.description) if proposal.description else "（待填）",
                 size=BODY_SIZE,
             )
             add_paragraph(doc, "【決議】", size=BODY_SIZE, bold=True)
-            add_paragraph(doc, proposal.decision, size=BODY_SIZE)
+            add_paragraph(doc, m(proposal.decision), size=BODY_SIZE)
 
     # 陸、臨時動議
     add_paragraph(
@@ -716,8 +767,8 @@ def generate_docx(record: MeetingRecord, output_path: str) -> str:
 
         set_cell_multiline(title_cell, member.get("title", ""), size=BODY_SIZE)
         set_cell_text(role_cell, member.get("role", ""), size=BODY_SIZE)
-        # 姓名中間加空格（如：林 思 遠）
-        name = member.get("name", "")
+        # 姓名中間加空格（如：林 思 遠），並套用 PII 遮蔽
+        name = m(member.get("name", ""))
         spaced_name = " ".join(name) if len(name) >= 2 else name
         set_cell_text(name_cell, spaced_name, size=BODY_SIZE)
         set_cell_text(sign_cell, "", size=BODY_SIZE)
@@ -806,6 +857,7 @@ def handle_json_mode():
 
     elif action == "generate":
         record = build_meeting_record(data)
+        names = collect_names(record)
 
         # Determine output path for docx
         output_dir = data.get("output_dir", os.path.expanduser("~/Downloads"))
@@ -816,7 +868,7 @@ def handle_json_mode():
         )
         docx_path = os.path.join(output_dir, docx_filename)
 
-        docx_path = generate_docx(record, docx_path)
+        docx_path = generate_docx(record, docx_path, mask_names=names)
         md_path = save_markdown(record)   # also calls update_moc() internally
         moc_path = os.path.join(OBSIDIAN_SPC_DIR, "MOC-特推會.md")
         moc_updated = os.path.exists(moc_path)
@@ -826,6 +878,42 @@ def handle_json_mode():
             "md_path": md_path,
             "moc_updated": moc_updated,
         }, ensure_ascii=False))
+
+    elif action == "generate-agenda":
+        record = build_meeting_record(data)
+        names = collect_names(record)
+
+        # Blank out decisions for agenda version
+        for p in record.proposals:
+            p.decision = "（待會議決定）"
+
+        output_dir = data.get("output_dir", os.path.expanduser("~/Downloads"))
+        topics_str = "+".join(p.type for p in record.proposals) if record.proposals else "未分類"
+        docx_filename = (
+            f"{record.academic_year}-特推會-{record.meeting_number:02d}"
+            f"-{topics_str}-議程.docx"
+        )
+        docx_path = os.path.join(output_dir, docx_filename)
+        docx_path = generate_docx(record, docx_path, mask_names=names)
+
+        # Save markdown with agenda status
+        md_path = save_markdown(record, status="agenda-generated", mode="prep")
+
+        result = {
+            "docx_path": docx_path,
+            "md_path": md_path,
+            "moc_updated": True,
+        }
+
+        # Generate HTML if requested
+        if data.get("pushToGitHub"):
+            import sys
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from html_template import generate_agenda_html
+            html_content = generate_agenda_html(record, names_to_mask=names)
+            result["html_content"] = html_content
+
+        print(json.dumps(result, ensure_ascii=False))
 
     else:
         print(json.dumps({"error": f"Unknown action: {action}"}), file=sys.stderr)

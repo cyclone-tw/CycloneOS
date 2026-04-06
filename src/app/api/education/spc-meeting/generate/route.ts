@@ -3,27 +3,50 @@ import { spawn } from "child_process";
 import { join } from "path";
 import { readFile } from "fs/promises";
 import { homedir } from "os";
+import { pushToGitHubPages } from "@/lib/github-pages";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const SCRIPT_PATH = join(process.cwd(), "scripts/education/spc_meeting_core.py");
+const MEETINGS_REPO = "cyclone-tw/meetings";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const action = body.action ?? "generate";
 
     if (!body.academicYear || !body.meetingNumber || !body.proposals?.length) {
       return Response.json({ error: "Missing required meeting data" }, { status: 400 });
     }
 
     const input = JSON.stringify({
-      action: "generate",
+      action,
       ...body,
     });
 
     const result = await runPython(SCRIPT_PATH, ["--json"], input);
     const parsed = JSON.parse(result);
+
+    // Push HTML to GitHub Pages if requested and content available
+    let htmlUrl: string | undefined;
+    if (parsed.html_content && body.pushToGitHub) {
+      try {
+        const year = body.academicYear;
+        const num = String(body.meetingNumber).padStart(2, "0");
+        const folder = `spc/${year}-${num}`;
+
+        const pushResult = await pushToGitHubPages({
+          repo: MEETINGS_REPO,
+          folder,
+          files: [{ name: "index.html", content: parsed.html_content }],
+          commitMessage: `Add SPC meeting ${year}-${num} agenda`,
+        });
+        htmlUrl = pushResult.url;
+      } catch (e) {
+        console.error("GitHub Pages push failed:", e);
+      }
+    }
 
     if (parsed.docx_path) {
       const docxBuffer = await readFile(parsed.docx_path);
@@ -35,6 +58,7 @@ export async function POST(request: Request) {
           "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
           "X-Md-Path": parsed.md_path ?? "",
           "X-Moc-Updated": parsed.moc_updated ? "true" : "false",
+          ...(htmlUrl ? { "X-Html-Url": htmlUrl } : {}),
         },
       });
     }

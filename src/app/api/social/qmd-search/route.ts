@@ -8,16 +8,15 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const body = (await request.json()) as { query?: string; file?: string };
 
-    const { execSync } = await import("child_process");
+    const { execFileSync } = await import("child_process");
 
     if (body.query) {
       // --- Search mode ---
-      const escaped = body.query.replace(/"/g, '\\"');
       let raw: string;
       try {
-        raw = execSync(`qmd search "${escaped}" --limit 10 --json`, {
+        raw = execFileSync("qmd", ["search", body.query, "--limit", "10", "--json"], {
           timeout: 10000,
-          encoding: "utf8",
+          encoding: "utf-8",
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -45,12 +44,11 @@ export async function POST(request: Request): Promise<Response> {
 
     if (body.file) {
       // --- Fetch full content mode ---
-      const escaped = body.file.replace(/"/g, '\\"');
       let content: string;
       try {
-        content = execSync(`qmd get "${escaped}"`, {
+        content = execFileSync("qmd", ["get", body.file], {
           timeout: 10000,
-          encoding: "utf8",
+          encoding: "utf-8",
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
