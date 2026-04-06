@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, RefreshCw, Check } from "lucide-react";
 import { StudentPicker, type StudentInfo } from "../shared/student-picker";
 import { HistoryReference, type HistoryRecord } from "../shared/history-reference";
+import { RefFilePicker, type RefFile } from "./ref-file-picker";
 
 export const PROPOSAL_TYPES = [
   "交通補助",
@@ -22,6 +23,7 @@ export interface ProposalData {
   decision: string;
   students: StudentInfo[];
   refDoc: string;
+  refFiles?: RefFile[];
 }
 
 interface ProposalFormProps {
@@ -30,9 +32,10 @@ interface ProposalFormProps {
   onChange: (data: ProposalData) => void;
   onRemove: () => void;
   canRemove: boolean;
+  mode?: "prep" | "record";
 }
 
-export function ProposalForm({ index, data, onChange, onRemove, canRemove }: ProposalFormProps) {
+export function ProposalForm({ index, data, onChange, onRemove, canRemove, mode = "record" }: ProposalFormProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -133,6 +136,12 @@ export function ProposalForm({ index, data, onChange, onRemove, canRemove }: Pro
             />
           </div>
 
+          <RefFilePicker
+            label="案由參考文件（公文、附件等）"
+            files={data.refFiles ?? []}
+            onChange={(refFiles) => update({ refFiles })}
+          />
+
           <HistoryReference records={historyRecords} loading={historyLoading} />
 
           <div className="flex items-center gap-2">
@@ -175,16 +184,23 @@ export function ProposalForm({ index, data, onChange, onRemove, canRemove }: Pro
             </div>
           )}
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-cy-muted">【決議】</label>
-            <textarea
-              value={data.decision}
-              onChange={(e) => update({ decision: e.target.value })}
-              placeholder="（會後填入）"
-              rows={3}
-              className="w-full rounded-md border border-cy-border bg-cy-input px-3 py-2 text-sm text-cy-text focus:border-cy-accent focus:outline-none resize-y"
-            />
-          </div>
+          {mode === "record" && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-cy-muted">【決議】</label>
+              <textarea
+                value={data.decision}
+                onChange={(e) => update({ decision: e.target.value })}
+                placeholder="（會後填入）"
+                rows={3}
+                className="w-full rounded-md border border-cy-border bg-cy-input px-3 py-2 text-sm text-cy-text focus:border-cy-accent focus:outline-none resize-y"
+              />
+            </div>
+          )}
+          {mode === "prep" && (
+            <div className="rounded-md bg-cy-input/30 px-3 py-2 text-xs text-cy-muted italic">
+              決議將在記錄模式中填寫
+            </div>
+          )}
         </div>
       )}
     </div>
