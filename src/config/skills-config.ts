@@ -62,9 +62,9 @@ export const SKILLS: SkillCard[] = [
   {
     id: "social",
     name: "社群發文模組",
-    description: "FB・IG・Threads・Notion 格式切換與自動化發文",
+    description: "素材轉社群貼文：FB・IG・LINE・學校網站・Notion 一鍵生成",
     icon: "📱",
     type: "workstation",
-    tags: ["Facebook", "Instagram", "Threads", "Notion", "社群"],
+    tags: ["Facebook", "Instagram", "LINE", "Notion", "社群", "貼文"],
   },
 ];
