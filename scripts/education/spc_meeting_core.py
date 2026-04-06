@@ -534,12 +534,54 @@ def draft_proposal(proposal: Proposal, similar: list) -> str:
 # ── 姓名遮蔽 ──
 
 def mask_name(name: str) -> str:
-    """遮蔽姓名中間字（3字→第2字，4字→第2、3字）。"""
+    """遮蔽姓名中間字。"""
+    if len(name) <= 1:
+        return name
+    if len(name) == 2:
+        return name[0] + "○"
     if len(name) == 3:
         return name[0] + "○" + name[2]
-    elif len(name) == 4:
-        return name[0] + "○○" + name[3]
-    return name
+    # 4+ chars: keep first and last
+    return name[0] + "○" * (len(name) - 2) + name[-1]
+
+
+_ADDRESS_RE = re.compile(
+    r"[\u4e00-\u9fff]{1,3}[縣市][\u4e00-\u9fff]{1,4}[鄉鎮市區][\u4e00-\u9fff\d\-號巷弄樓之]+"
+)
+_PHONE_RE = re.compile(
+    r"(?:0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{3,4}|09\d{2}[-\s]?\d{3}[-\s]?\d{3})"
+)
+
+
+def mask_pii(text: str, names: list[str]) -> str:
+    """Mask all PII in text: known names, addresses, phone numbers."""
+    result = text
+    for name in sorted(names, key=len, reverse=True):
+        if name and len(name) >= 2:
+            result = result.replace(name, mask_name(name))
+    result = _ADDRESS_RE.sub("（地址已隱藏）", result)
+    result = _PHONE_RE.sub("（電話已隱藏）", result)
+    return result
+
+
+def collect_names(record) -> list[str]:
+    """Collect all names from a MeetingRecord for PII masking."""
+    names = set()
+    names.add(record.chair)
+    names.add(record.recorder)
+    for m in record.committee:
+        if isinstance(m, dict):
+            names.add(m.get("name", ""))
+        elif hasattr(m, "name"):
+            names.add(m.name)
+    for p in record.proposals:
+        for s in (p.students if p.students else []):
+            if isinstance(s, dict):
+                names.add(s.get("name", ""))
+            elif isinstance(s, str):
+                names.add(s)
+    names.discard("")
+    return list(names)
 
 
 # ── 生成 .docx ──
