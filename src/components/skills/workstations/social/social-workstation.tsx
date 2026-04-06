@@ -93,21 +93,24 @@ export function SocialWorkstation() {
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
 
+        let currentEvent = "";
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const jsonStr = trimmed.slice(5).trim();
-          if (!jsonStr) continue;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            if (parsed.fb || parsed.ig || parsed.line || parsed.school || parsed.notion) {
-              setGeneratedContents(parsed);
-            } else if (parsed.message) {
-              setError(parsed.message);
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+            continue;
+          }
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (currentEvent === "result") {
+                setGeneratedContents(data);
+              } else if (currentEvent === "error" && data.message) {
+                setError(data.message);
+              }
+            } catch {
+              // Partial JSON, ignore
             }
-          } catch {
-            // Ignore malformed JSON lines
+            currentEvent = "";
           }
         }
       }

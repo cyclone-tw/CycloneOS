@@ -7,10 +7,10 @@ import type { Platform } from "./prompts";
 // --- Constants ---
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
-  fb: "Facebook",
-  ig: "Instagram",
+  fb: "FB",
+  ig: "IG",
   line: "LINE",
-  school: "學校公告",
+  school: "學校網站",
   notion: "Notion",
 };
 
@@ -104,17 +104,20 @@ export async function createSocialPost(
     throw new Error("[social/notion] Missing NOTION_SOCIAL_DATABASE_ID");
   }
 
-  const { title, platforms, contents, hashtags, publishDate, tags, tone, source } = params;
+  const { title, platforms, contents, hashtags, imageUrls, publishDate, tags, tone, source } = params;
+
+  /** Shorthand: build a rich_text array from a string */
+  const rt = (text: string) => [{ type: "text", text: { content: cap2000(text) } }];
 
   // Build Notion properties
   const properties: Record<string, unknown> = {
     // Title (database title property)
-    Name: {
+    Title: {
       title: [{ type: "text", text: { content: cap2000(title) } }],
     },
-    // Status
+    // Status (status type, not select)
     Status: {
-      select: { name: "草稿" },
+      status: { name: "草稿" },
     },
     // Platforms: multi_select
     Platforms: {
@@ -123,7 +126,7 @@ export async function createSocialPost(
   };
 
   if (publishDate) {
-    properties["發佈日期"] = { date: { start: publishDate } };
+    properties["Publish Date"] = { date: { start: publishDate } };
   }
 
   if (tags && tags.length > 0) {
@@ -133,23 +136,32 @@ export async function createSocialPost(
   }
 
   if (tone) {
-    properties["語氣"] = {
+    properties["Tone"] = {
       select: { name: tone },
     };
   }
 
   if (source) {
-    properties["素材來源"] = {
-      rich_text: [{ type: "text", text: { content: cap2000(source) } }],
+    properties["Source"] = {
+      rich_text: rt(source),
     };
   }
 
   if (hashtags && hashtags.length > 0) {
     const hashtagStr = hashtags.join(", ");
     properties["Hashtags"] = {
-      rich_text: [{ type: "text", text: { content: cap2000(hashtagStr) } }],
+      rich_text: rt(hashtagStr),
     };
   }
+
+  // Per-platform content properties
+  if (contents.fb) properties["Content FB"] = { rich_text: rt(contents.fb) };
+  if (contents.ig) properties["Content IG"] = { rich_text: rt(contents.ig) };
+  if (contents.line) properties["Content LINE"] = { rich_text: rt(contents.line) };
+  if (contents.school) properties["Content School"] = { rich_text: rt(contents.school) };
+
+  // Image URLs
+  if (imageUrls?.length) properties["Image URLs"] = { rich_text: rt(imageUrls.join(",")) };
 
   // Build page body
   const bodyMarkdown = buildPageBody(platforms, contents, hashtags);
@@ -209,7 +221,7 @@ export async function fetchSocialHistory(limit = 20): Promise<NotionPostRecord[]
     const props = page.properties;
 
     // Title
-    const titleProp = props["Name"] as { title?: Array<{ plain_text: string }> } | undefined;
+    const titleProp = props["Title"] as { title?: Array<{ plain_text: string }> } | undefined;
     const title = titleProp?.title?.[0]?.plain_text ?? "(無標題)";
 
     // Platforms
@@ -233,12 +245,12 @@ export async function fetchSocialHistory(limit = 20): Promise<NotionPostRecord[]
       .map((name) => labelToKey[name])
       .filter(Boolean) as Platform[];
 
-    // Status
-    const statusProp = props["Status"] as { select?: { name: string } } | undefined;
-    const status = statusProp?.select?.name ?? "草稿";
+    // Status (status type, not select)
+    const statusProp = props["Status"] as { status?: { name: string } } | undefined;
+    const status = statusProp?.status?.name ?? "草稿";
 
     // Date
-    const dateProp = props["發佈日期"] as { date?: { start: string } } | undefined;
+    const dateProp = props["Publish Date"] as { date?: { start: string } } | undefined;
     const date = dateProp?.date?.start ?? null;
 
     return {
