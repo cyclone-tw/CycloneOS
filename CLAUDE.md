@@ -139,9 +139,8 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 
 ---
 
-## Discord Bot 行為規則
+## Discord Bot
 
-收到訊息時系統自動加 👀。任務結束後用 `react` 工具加：✅ 完成 / ❌ 失敗。
+Bot 使用獨立工作目錄和專用 CLAUDE.md，規則定義在 `discord-bot/CLAUDE.md`。
 
-- 用繁體中文回覆，簡潔直接
-- 失敗時說明原因，不要沉默不回應
+啟動：`bash scripts/discord-bot.sh`（tmux while-loop，auto-restart）
