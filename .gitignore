@@ -49,3 +49,9 @@ next-env.d.ts
 # uploaded files (symlink to Google Drive)
 public/uploads/
 scripts/education/__pycache__/
+
+# playwright
+.playwright-mcp/
+
+# spectra
+.spectra.yaml
