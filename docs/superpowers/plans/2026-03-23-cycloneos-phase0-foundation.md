@@ -104,7 +104,7 @@ touch ~/.cyclone/logs/audit.jsonl
   "system_name": "CycloneOS",
   "paths": {
     "vault": "/Users/username/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone",
-    "school_drive": "/Users/username/Library/CloudStorage/GoogleDrive-cyclonetw@ksps.ntct.edu.tw",
+    "school_drive": "/Users/username/Library/CloudStorage/GoogleDrive-user@school.edu.tw",
     "repo": "/Users/username/CycloneOpenClaw",
     "cyclone_home": "/Users/username/.cyclone"
   },
@@ -250,7 +250,7 @@ Expected: `README.md  knowledge-index  meeting-notes  pipeline-drafts  sessions`
     {
       "id": "school-drive",
       "type": "google-drive",
-      "account": "cyclonetw@ksps.ntct.edu.tw",
+      "account": "user@school.edu.tw",
       "category": "school-docs",
       "description": "學校公文與文件"
     },

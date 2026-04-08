@@ -42,8 +42,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SCHOOL_DEFAULTS = {
     "school_name": "○○",
-    "chair": "林甘偉",
-    "recorder": "康雲昇",
+    "chair": "○○○",
+    "recorder": "○○○",
     "location": "2F會議室",
 }
 

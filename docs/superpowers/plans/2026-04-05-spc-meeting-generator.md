@@ -254,22 +254,22 @@ OBSIDIAN_SPC_DIR = os.path.expanduser(
 
 SCHOOL_DEFAULTS = {
     "school_name": "○○",
-    "chair": "林思遠",
-    "recorder": "康雲昇",
+    "chair": "○○○",
+    "recorder": "○○○",
     "location": "本校三樓共讀站",
     "academic_year": 114,
 }
 
 DEFAULT_COMMITTEE = [
-    {"title": "主任委員", "role": "校長", "name": "林思遠"},
-    {"title": "副主任委員\n兼主任秘書", "role": "教導主任", "name": "余姵融"},
-    {"title": "副主任委員", "role": "總務主任", "name": "郭恕遠"},
-    {"title": "委員 兼\n執行秘書", "role": "特教教師", "name": "康雲昇"},
-    {"title": "委員", "role": "教務組長", "name": "吳怡萱"},
-    {"title": "委員", "role": "特教教師", "name": "徐雪霞"},
-    {"title": "委員", "role": "普通班教師", "name": "邱彤慧"},
-    {"title": "委員", "role": "普通班教師", "name": "余曜男"},
-    {"title": "委員", "role": "家長代表", "name": "廖金南"},
+    {"title": "主任委員", "role": "校長", "name": "○○○"},
+    {"title": "副主任委員\n兼主任秘書", "role": "教導主任", "name": "○○○"},
+    {"title": "副主任委員", "role": "總務主任", "name": "○○○"},
+    {"title": "委員 兼\n執行秘書", "role": "特教教師", "name": "○○○"},
+    {"title": "委員", "role": "教務組長", "name": "○○○"},
+    {"title": "委員", "role": "特教教師", "name": "○○○"},
+    {"title": "委員", "role": "普通班教師", "name": "○○○"},
+    {"title": "委員", "role": "普通班教師", "name": "○○○"},
+    {"title": "委員", "role": "家長代表", "name": "○○○"},
 ]
 
 # ── 案由類型 ──
@@ -307,8 +307,8 @@ class MeetingRecord:
     time_start: str = "上午08:10"
     time_end: str = ""
     location: str = "本校三樓共讀站"
-    chair: str = "林思遠"
-    recorder: str = "康雲昇"
+    chair: str = "○○○"
+    recorder: str = "○○○"
     business_report: str = ""
     previous_tracking: str = ""
     proposals: list = field(default_factory=list)
@@ -826,14 +826,14 @@ record = MeetingRecord(
     date='115年4月5日',
     weekday='六',
     time_start='上午08:10',
-    chair='林思遠',
-    recorder='康雲昇',
+    chair='○○○',
+    recorder='○○○',
     business_report='測試業務報告。',
     proposals=[
         Proposal(
             type='交通補助',
-            title='為四甲廖○仁申請交通補助費，提請討論。',
-            description='四甲廖生領有第一類中度身心障礙證明，平日由祖父接送上放學。',
+            title='為四甲王○明申請交通補助費，提請討論。',
+            description='四甲王生領有第一類中度身心障礙證明，平日由祖父接送上放學。',
             decision='經委員會討論後，通過以下決議。',
         )
     ],
@@ -1162,12 +1162,12 @@ record = MeetingRecord(
     proposals=[
         Proposal(
             type='交通補助',
-            title='為四甲廖○仁、三甲陳○鑫，申請114年下半年度身心障礙學生交通補助費，提請討論。',
-            description='（一）四甲廖生領有第一類中度身心障礙證明，平日由祖父接送上放學。三甲陳生領有第一類輕度身心障礙證明，平日由祖母接送上放學。\n（二）兩名學生皆為特殊教育通報網上之學生，並有本縣鑑定安置文號，擬由特教業務承辦人為二名學生提出交通補助費之申請。',
+            title='為四甲王○明、三甲李○華，申請114年下半年度身心障礙學生交通補助費，提請討論。',
+            description='（一）四甲王生領有第一類中度身心障礙證明，平日由祖父接送上放學。三甲李生領有第一類輕度身心障礙證明，平日由祖母接送上放學。\n（二）兩名學生皆為特殊教育通報網上之學生，並有本縣鑑定安置文號，擬由特教業務承辦人為二名學生提出交通補助費之申請。',
             decision='經委員會討論後，通過以下決議。\n二名學生符合本縣身障生交通補助費之申請資格，由特教業務承辦人備妥相關表件資料與完成核章作業報府處理。',
             students=[
-                {'name': '廖祐仁', 'grade': '四甲', 'disability': '中度智障', 'detail': '祖父接送'},
-                {'name': '陳品鑫', 'grade': '三甲', 'disability': '輕度智障', 'detail': '祖母接送'},
+                {'name': '王小明', 'grade': '四甲', 'disability': '中度智障', 'detail': '祖父接送'},
+                {'name': '李小華', 'grade': '三甲', 'disability': '輕度智障', 'detail': '祖母接送'},
             ],
         ),
     ],

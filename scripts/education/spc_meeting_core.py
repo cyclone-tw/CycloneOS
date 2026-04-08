@@ -37,22 +37,22 @@ OBSIDIAN_SPC_DIR = os.path.expanduser(
 
 SCHOOL_DEFAULTS = {
     "school_name": "○○",
-    "chair": "林思遠",
-    "recorder": "康雲昇",
+    "chair": "○○○",
+    "recorder": "○○○",
     "location": "本校三樓共讀站",
     "academic_year": 114,
 }
 
 DEFAULT_COMMITTEE = [
-    {"title": "主任委員", "role": "校長", "name": "林思遠"},
-    {"title": "副主任委員\n兼主任秘書", "role": "教導主任", "name": "余姵融"},
-    {"title": "副主任委員", "role": "總務主任", "name": "郭恕遠"},
-    {"title": "委員 兼\n執行秘書", "role": "特教教師", "name": "康雲昇"},
-    {"title": "委員", "role": "教務組長", "name": "吳怡萱"},
-    {"title": "委員", "role": "特教教師", "name": "徐雪霞"},
-    {"title": "委員", "role": "普通班教師", "name": "邱彤慧"},
-    {"title": "委員", "role": "普通班教師", "name": "余曜男"},
-    {"title": "委員", "role": "家長代表", "name": "廖金南"},
+    {"title": "主任委員", "role": "校長", "name": "○○○"},
+    {"title": "副主任委員\n兼主任秘書", "role": "教導主任", "name": "○○○"},
+    {"title": "副主任委員", "role": "總務主任", "name": "○○○"},
+    {"title": "委員 兼\n執行秘書", "role": "特教教師", "name": "○○○"},
+    {"title": "委員", "role": "教務組長", "name": "○○○"},
+    {"title": "委員", "role": "特教教師", "name": "○○○"},
+    {"title": "委員", "role": "普通班教師", "name": "○○○"},
+    {"title": "委員", "role": "普通班教師", "name": "○○○"},
+    {"title": "委員", "role": "家長代表", "name": "○○○"},
 ]
 
 PROPOSAL_TYPES = [
@@ -88,8 +88,8 @@ class MeetingRecord:
     time_start: str = "上午08:10"
     time_end: str = ""
     location: str = "本校三樓共讀站"
-    chair: str = "林思遠"
-    recorder: str = "康雲昇"
+    chair: str = "○○○"
+    recorder: str = "○○○"
     business_report: str = ""
     previous_tracking: str = ""
     proposals: list = field(default_factory=list)
@@ -522,7 +522,7 @@ def draft_proposal(proposal: Proposal, similar: list) -> str:
 ## 撰寫原則
 1. 使用正式公文用語，語氣嚴謹
 2. 參考歷次格式，保持一致性
-3. 學生姓名中間字用○代替（例：廖祐仁→廖○仁）
+3. 學生姓名中間字用○代替（例：王小明→王○明）
 4. 如有公文字號，請在說明中引用
 5. 使用繁體中文
 6. 段落用（一）（二）編號

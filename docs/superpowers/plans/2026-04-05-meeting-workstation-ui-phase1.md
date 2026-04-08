@@ -245,7 +245,7 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
 
 - [ ] **Step 6: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds. Education workstation card opens sub-module grid, SPC card navigates to stub panel.
 
 - [ ] **Step 7: Commit**
@@ -370,7 +370,7 @@ export function MeetingSectionEditor({ sections, values, onChange }: MeetingSect
 
 - [ ] **Step 3: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 4: Commit**
@@ -620,7 +620,7 @@ export function HistoryReference({ records, loading, label }: HistoryReferencePr
 
 - [ ] **Step 4: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 5: Commit**
@@ -793,7 +793,7 @@ export async function writeCommitteeFile(roster: CommitteeRoster): Promise<strin
 
 - [ ] **Step 3: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 4: Commit**
@@ -898,7 +898,7 @@ export async function POST(request: Request) {
 
 - [ ] **Step 3: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 4: Commit**
@@ -1119,7 +1119,7 @@ export function CommitteeManager({ year, isOpen, onClose, onSaved }: CommitteeMa
 
 - [ ] **Step 2: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 3: Commit**
@@ -1407,7 +1407,7 @@ function runPython(script: string, args: string[], stdin: string): Promise<strin
 
 - [ ] **Step 4: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 5: Commit**
@@ -1512,7 +1512,7 @@ function runPython(script: string, args: string[], stdin: string): Promise<strin
 
 - [ ] **Step 2: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 3: Commit**
@@ -1828,7 +1828,7 @@ export function BusinessReportEditor({ value, onChange }: BusinessReportEditorPr
 
 - [ ] **Step 4: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds.
 
 - [ ] **Step 5: Commit**
@@ -2215,12 +2215,12 @@ export function SpcMeetingPanel({ onBack }: SpcMeetingPanelProps) {
 
 - [ ] **Step 2: Verify build**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run build`
+Run: `cd /Users/username/CycloneOS && npm run build`
 Expected: Build succeeds with no errors.
 
 - [ ] **Step 3: Manual smoke test**
 
-Run: `cd /Users/kangyunsheng/CycloneOS && npm run dev`
+Run: `cd /Users/username/CycloneOS && npm run dev`
 
 Verify:
 1. Click 🎓 教育工作站 → see sub-module grid
@@ -2305,7 +2305,7 @@ Note: The exact implementation depends on the current state of `spc_meeting_core
 - [ ] **Step 3: Test the JSON mode locally**
 
 ```bash
-echo '{"action":"draft","proposal_type":"交通補助","students":[{"name":"廖祐仁","className":"四甲","disability":"中度智障","detail":"祖父接送"}],"ref_doc":""}' | python3 scripts/education/spc_meeting_core.py --json
+echo '{"action":"draft","proposal_type":"交通補助","students":[{"name":"王小明","className":"四甲","disability":"中度智障","detail":"祖父接送"}],"ref_doc":""}' | python3 scripts/education/spc_meeting_core.py --json
 ```
 
 Expected: JSON output with `title` and `description` fields.

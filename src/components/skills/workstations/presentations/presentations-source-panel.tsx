@@ -12,7 +12,7 @@ import { ThemePicker } from "./theme-picker";
 type ActivePanel = null | "paste" | "research";
 
 const OUTPUTS_PATH =
-  "~/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone/CycloneOS";
+  `~/Library/CloudStorage/GoogleDrive-${process.env.NEXT_PUBLIC_GDRIVE_EMAIL || "user@gmail.com"}/我的雲端硬碟/Obsidian-Cyclone/CycloneOS`;
 
 export function PresentationsSourcePanel() {
   const {

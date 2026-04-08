@@ -15,19 +15,22 @@ function driveBasePath(email: string): string {
   return join(homedir(), "Library/CloudStorage", `GoogleDrive-${email}`, "我的雲端硬碟");
 }
 
+const PERSONAL_EMAIL = process.env.GOOGLE_DRIVE_EMAIL_PERSONAL || "user@gmail.com";
+const SCHOOL_EMAIL = process.env.GOOGLE_DRIVE_EMAIL_SCHOOL || "user@school.edu.tw";
+
 export const DRIVE_ACCOUNTS: DriveAccount[] = [
   {
     id: "personal",
-    email: "user@gmail.com",
+    email: PERSONAL_EMAIL,
     label: "個人",
-    localBasePath: driveBasePath("user@gmail.com"),
+    localBasePath: driveBasePath(PERSONAL_EMAIL),
     outputFolder: "CycloneOS-output",
   },
   {
     id: "school",
-    email: "cyclonetw@ksps.ntct.edu.tw",
+    email: SCHOOL_EMAIL,
     label: "學校",
-    localBasePath: driveBasePath("cyclonetw@ksps.ntct.edu.tw"),
+    localBasePath: driveBasePath(SCHOOL_EMAIL),
     outputFolder: "CycloneOS-output",
   },
 ];

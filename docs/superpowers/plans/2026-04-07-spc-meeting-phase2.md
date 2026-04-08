@@ -50,7 +50,7 @@
 /**
  * Mask a Chinese name by replacing middle characters with ○.
  * 2 chars: 王明 → 王○
- * 3 chars: 廖祐仁 → 廖○仁
+ * 3 chars: 王小明 → 王○明
  * 4+ chars: 歐陽佩琪 → 歐○○琪
  */
 export function maskName(name: string): string {

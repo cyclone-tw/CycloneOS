@@ -97,7 +97,7 @@ tags: [cycloneos, claude-code, dashboard, workflow, draco]
 ├── config.json                  # 全域設定
 │   {
 │     "vault_path": "~/Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟/Obsidian-Cyclone",
-│     "school_drive": "~/Library/CloudStorage/GoogleDrive-cyclonetw@ksps.ntct.edu.tw",
+│     "school_drive": "~/Library/CloudStorage/GoogleDrive-user@school.edu.tw",
 │     "notion_tasks_db": "<CY Task DB ID>",
 │     "brand": {
 │       "name": "Cyclone",
@@ -552,7 +552,7 @@ output/reports/YYYY-MM-DD-<doc-title>.md
     },
     {
       "type": "google-drive",
-      "account": "cyclonetw@ksps.ntct.edu.tw",
+      "account": "user@school.edu.tw",
       "category": "school-docs"
     },
     {

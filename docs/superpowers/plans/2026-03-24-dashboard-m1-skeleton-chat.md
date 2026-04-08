@@ -82,7 +82,7 @@ Create `dashboard/.env.local`:
 
 # Notion
 NOTION_TOKEN=
-NOTION_TASKS_DB_ID=1803047f-3820-4a10-ab23-ef79ab5d6957
+NOTION_TASKS_DB_ID=<YOUR_NOTION_DB_ID>
 
 # GitHub
 GITHUB_TOKEN=

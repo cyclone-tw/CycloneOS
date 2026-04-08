@@ -20,7 +20,7 @@ import tempfile
 from docx import Document
 
 DRIVE_BASE = os.path.expanduser(
-    "~/Library/CloudStorage/GoogleDrive-cyclonetw@ksps.ntct.edu.tw"
+    "~/Library/CloudStorage/GoogleDrive-user@school.edu.tw"
     "/我的雲端硬碟/04.學校相關/01.特教業務/03.特教各項會議/01.特推會"
 )
 
@@ -161,7 +161,7 @@ def parse_meeting_info(year: int, fname: str, text: str) -> dict:
     m = re.search(r"主席[：:]\s*(.+?)(?:\s{2,}|　|記錄|\n|$)", text)
     if m:
         chair = m.group(1).strip()
-        # 清理「林校長思遠」→「林思遠」
+        # 清理「X校長YZ」→「XYZ」
         chair = re.sub(r"校長", "", chair)
         info["chair"] = chair
 

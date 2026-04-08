@@ -5,7 +5,7 @@ for SPC meeting agenda pages.
 
 Usage:
     from html_template import generate_agenda_html
-    html = generate_agenda_html(record, names_to_mask=["林思遠", "康雲昇"])
+    html = generate_agenda_html(record, names_to_mask=["○○○", "○○○"])
 """
 
 import html as _html_mod

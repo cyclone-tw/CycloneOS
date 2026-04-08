@@ -78,10 +78,10 @@ export const DRIVE_ACCOUNTS: DriveAccount[] = [
   },
   {
     id: "school",
-    email: "cyclonetw@ksps.ntct.edu.tw",
+    email: "user@school.edu.tw",
     label: "學校",
     localBasePath:
-      "/Users/username/Library/CloudStorage/GoogleDrive-cyclonetw@ksps.ntct.edu.tw/我的雲端硬碟",
+      "/Users/username/Library/CloudStorage/GoogleDrive-user@school.edu.tw/我的雲端硬碟",
     outputFolder: "CycloneOS-output",
   },
 ];

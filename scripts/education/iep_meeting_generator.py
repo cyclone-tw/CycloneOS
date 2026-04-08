@@ -48,20 +48,20 @@ def generate_meeting_record(data: dict, output_path: str):
         "academic_year": "114",
         "semester": 1,
         "meeting_type": "擬訂" | "檢討",
-        "student_name": "廖祐仁",
+        "student_name": "王小明",
         "meeting_date": "114年6月26日",
         "location": "2F會議室",
-        "chair": "林甘偉",
-        "recorder": "康雲昇",
+        "chair": "○○○",
+        "recorder": "○○○",
         "discussion": "討論內容...",
         "resolution": "決議內容...",
         "attendees": {
-            "admin": ["余姵融"],
-            "parents": ["廖金南"],
-            "regular_teachers": ["邱彤慧"],
-            "special_ed_teachers": ["康雲昇", "徐雪霞"],
+            "admin": ["○○○"],
+            "parents": ["○○○"],
+            "regular_teachers": ["○○○"],
+            "special_ed_teachers": ["○○○", "○○○"],
             "professionals": [],
-            "assistants": ["陳阿姨"]
+            "assistants": ["○○○"]
         }
     }
     """

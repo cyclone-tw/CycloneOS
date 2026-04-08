@@ -8,9 +8,10 @@ import { join } from "path";
 import { homedir } from "os";
 
 // --- Google Drive 根目錄 ---
+const GDRIVE_EMAIL = process.env.GOOGLE_DRIVE_EMAIL_PERSONAL || "user@gmail.com";
 const GOOGLE_DRIVE_ROOT = join(
   homedir(),
-  "Library/CloudStorage/GoogleDrive-user@gmail.com/我的雲端硬碟",
+  `Library/CloudStorage/GoogleDrive-${GDRIVE_EMAIL}/我的雲端硬碟`,
 );
 
 // --- CycloneOS 雲端資料夾 ---
