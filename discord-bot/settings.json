@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__plugin_discord_discord__reply",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/discord-bot/hooks/log-activity.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__plugin_discord_discord__react",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/discord-bot/hooks/log-activity.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
