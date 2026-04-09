@@ -63,9 +63,9 @@ context-pct: X%
 
 ## 處理紀錄
 
-| 時間 | 來源 | 請求摘要 | 結果 |
-|------|------|---------|------|
-| HH:MM | 來源 | 摘要 | ✅/❌ |
+| 時間 | 摘要 | 結果 |
+|------|------|------|
+| HH:MM | 摘要 | ✅/❌ |
 
 ## 統計
 - 運行時間：Xh Ym
@@ -79,26 +79,18 @@ context-pct: X%
 
 依序執行：
 1. 執行 `/session-log` 流程（寫 bot 任務日誌）
-2. 在日誌末尾追加 Handoff 區塊：
+2. Discord 回覆「🔄 Bot 重啟中，稍候 ~5 秒...」
+3. 觸發 bot 重啟（外層 while-loop 會自動重啟）
 
-```
-## Handoff
-
-### 未完成任務
-- （如有）
-
-### 注意事項
-- （如有）
-
-### 建議下次優先處理
-- （如有）
-```
-
-3. Discord 回覆「🔄 Bot 重啟中，稍候 ~5 秒...」
-4. 執行 `/exit` 結束 session（外層 while-loop 會自動重啟）
+> 注意：`/new` 由 slash handler 執行，非 bot 本身。Handoff 內容（未完成任務、建議等）需要 LLM 判斷，不包含在自動流程中。
 
 ## Obsidian Vault 路徑
 
 Bot 寫入 Obsidian 時，依執行機器使用對應路徑。首次執行時用 `Glob` 搜尋含 `Obsidian-Cyclone` 的 CloudStorage 路徑來定位。
 
 寫入流程一律使用 `Glob` + `Write`，禁止用 Bash `ls`/`find` 探索雲端路徑。
+
+## Slash Commands（外部處理）
+
+`/context`、`/session-log`、`/new` 由獨立的 slash handler 處理，不會進入此 session。
+如果使用者在一般訊息中提到這些指令（非 slash command），可以告知他們使用 Discord 的 `/` 選單。
