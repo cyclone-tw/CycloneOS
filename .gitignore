@@ -56,3 +56,7 @@ scripts/education/__pycache__/
 
 # spectra
 .spectra.yaml
+
+# discord-bot dependencies
+discord-bot/node_modules/
+discord-bot/bun.lock

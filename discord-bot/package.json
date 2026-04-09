@@ -1,0 +1,11 @@
+{
+  "name": "cycloneos-discord-slash-handler",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "discord.js": "^14.14.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}
