@@ -1,6 +1,11 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'fs'
 import { execSync } from 'child_process'
 import { join } from 'path'
+import {
+  Client,
+  GatewayIntentBits,
+  type Interaction,
+} from 'discord.js'
 
 // ── Config ──────────────────────────────────────────────────────────
 const BOT_DIR = process.env.BOT_DIR ?? join(process.env.HOME!, 'discord-bot')
@@ -118,3 +123,171 @@ function nextSessionNumber(dir: string, datePrefix: string): number {
 function padTwo(n: number): string {
   return n.toString().padStart(2, '0')
 }
+
+// ── Command Handlers ────────────────────────────────────────────────
+
+function handleContext(): string {
+  const startup = readStartup()
+  const entries = readActivity()
+  const tokenInfo = readTmuxTokens()
+
+  const uptime = startup ? formatUptime(startup.startedAt) : '未知'
+  const replyCount = entries.filter(e => e.tool === 'reply').length
+  const summaries = buildRecentSummaries(entries)
+  const tokenLine = tokenInfo
+    ? `${tokenInfo.tokens} tok / ${tokenInfo.percent} used`
+    : 'N/A'
+
+  let msg = `🤖 **Bot Session 狀態**\n─────────────────\n`
+  msg += `⏱ 運行時間：${uptime}\n`
+  msg += `📨 已處理訊息：${replyCount} 則\n`
+
+  if (summaries.length > 0) {
+    msg += `📋 最近處理：\n${summaries.join('\n')}\n`
+  }
+
+  msg += `🧠 Context：${tokenLine}`
+  return msg
+}
+
+async function handleSessionLog(): Promise<string> {
+  if (!OBSIDIAN_VAULT) {
+    throw new Error('OBSIDIAN_VAULT 環境變數未設定')
+  }
+
+  const startup = readStartup()
+  const entries = readActivity()
+  const tokenInfo = readTmuxTokens()
+
+  const now = new Date()
+  const dateStr = `${now.getFullYear()}-${padTwo(now.getMonth() + 1)}-${padTwo(now.getDate())}`
+  const uptime = startup ? formatUptime(startup.startedAt) : '未知'
+
+  const replies = entries.filter(e => e.tool === 'reply')
+  const reacts = entries.filter(e => e.tool === 'react')
+  const successCount = reacts.filter(e => e.emoji === '✅').length
+  const failCount = reacts.filter(e => e.emoji === '❌').length
+
+  const taskRows = replies.map(reply => {
+    const time = new Date(reply.ts)
+    const hhmm = `${padTwo(time.getHours())}:${padTwo(time.getMinutes())}`
+    const summary = truncate(reply.text ?? '(no text)', 40)
+
+    const replyTime = time.getTime()
+    const matchReact = reacts.find(r => {
+      const reactTime = new Date(r.ts).getTime()
+      return r.chat_id === reply.chat_id &&
+        reactTime >= replyTime &&
+        reactTime - replyTime < 10000
+    })
+    const result = matchReact?.emoji ?? '⏳'
+
+    return `| ${hhmm} | ${summary} | ${result} |`
+  })
+
+  const logDir = join(OBSIDIAN_VAULT, 'Discord', 'bot-logs')
+  mkdirSync(logDir, { recursive: true })
+  const sessionNum = nextSessionNumber(logDir, dateStr)
+  const fileName = `${dateStr}-bot-${padTwo(sessionNum)}.md`
+
+  const tokenUsage = tokenInfo?.tokens ?? 'N/A'
+  const contextPct = tokenInfo?.percent ?? 'N/A'
+
+  const md = `---
+type: bot-log
+date: ${dateStr}
+session: ${sessionNum}
+duration: ${uptime}
+message-count: ${replies.length}
+token-usage: ${tokenUsage}
+context-pct: ${contextPct}
+---
+
+# Bot Log ${dateStr} #${sessionNum}
+
+## 處理紀錄
+
+| 時間 | 摘要 | 結果 |
+|------|------|------|
+${taskRows.length > 0 ? taskRows.join('\n') : '| - | 無活動記錄 | - |'}
+
+## 統計
+- 運行時間：${uptime}
+- 處理訊息：${replies.length} 則（✅ ${successCount} / ❌ ${failCount}）
+- Token 用量：${tokenUsage} / ${contextPct} context
+`
+
+  writeFileSync(join(logDir, fileName), md)
+  return `✅ Bot log 已儲存：${fileName}`
+}
+
+async function handleNew(): Promise<string> {
+  let logMsg: string
+  try {
+    logMsg = await handleSessionLog()
+  } catch (err) {
+    logMsg = `⚠️ Session log 寫入失敗：${err instanceof Error ? err.message : String(err)}`
+  }
+
+  try {
+    execSync("tmux send-keys -t discord-bot '/exit' Enter", { timeout: 3000 })
+  } catch {
+    return `${logMsg}\n\n⚠️ 無法觸發 bot 重啟（tmux session 不存在？）`
+  }
+
+  return `${logMsg}\n\n🔄 Bot 重啟中，稍候 ~5 秒...`
+}
+
+// ── Discord Client ──────────────────────────────────────────────────
+
+const TOKEN = process.env.DISCORD_BOT_TOKEN
+if (!TOKEN) {
+  console.error('DISCORD_BOT_TOKEN required')
+  process.exit(1)
+}
+
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds],
+})
+
+client.on('interactionCreate', async (interaction: Interaction) => {
+  if (!interaction.isChatInputCommand()) return
+
+  try {
+    switch (interaction.commandName) {
+      case 'context': {
+        const msg = handleContext()
+        await interaction.reply(msg)
+        break
+      }
+      case 'session-log': {
+        await interaction.deferReply()
+        const msg = await handleSessionLog()
+        await interaction.editReply(msg)
+        break
+      }
+      case 'new': {
+        await interaction.deferReply()
+        const msg = await handleNew()
+        await interaction.editReply(msg)
+        break
+      }
+      default:
+        await interaction.reply({ content: `未知指令：/${interaction.commandName}`, ephemeral: true })
+    }
+  } catch (err) {
+    console.error(`slash command error (${interaction.commandName}):`, err)
+    const errorMsg = `❌ 指令執行失敗：${err instanceof Error ? err.message : String(err)}`
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ content: errorMsg, ephemeral: true }).catch(() => {})
+    } else {
+      await interaction.reply({ content: errorMsg, ephemeral: true }).catch(() => {})
+    }
+  }
+})
+
+client.once('ready', c => {
+  console.log(`Slash handler connected as ${c.user.tag}`)
+})
+
+client.login(TOKEN)
