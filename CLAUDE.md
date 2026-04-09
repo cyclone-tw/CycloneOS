@@ -36,105 +36,55 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 
 ---
 
-## 🔜 Next Session: Smoke Test + 學生資料 Spec + IEP 面板
+## 🔜 Next Session: Discord Bot 部署驗證 + 指令測試
 
 > 複製以下內容作為新 session 的第一句話，然後刪除此區塊。
 
 ```
-接續 session-07 + session-08（2026-04-07，Mac Mini，兩個平行 session）。
-社群發文模組 MVP + 特推會 Phase 2 已完成並合併 main。
+接續 MacBook session（2026-04-08）。Discord Bot 指令系統已實作，需要在 Mac Mini 部署驗證。
 
-## 已完成（session-07）：社群發文模組 MVP
+## 剛完成的變更（已 push 到 main）
 
-智慧轉發器（Smart Reposter）— 素材→LLM 改寫→多平台貼文→Notion 中樞：
-- 5 個平台：FB/IG/LINE/學校網站/Notion
-- 3 種語氣：知識分享/日常/活動宣傳
-- 素材來源：直接輸入 + QMD 搜尋 Obsidian 筆記
-- 圖片拖曳上傳（純附件，不用 AI Vision）
-- LLM 串流生成各平台版本（SSE）
-- 一鍵複製 + 發布到 Notion Database（n8n-friendly schema）
-- 歷史記錄從 Notion 拉取
-- Notion Database 已建立（NOTION_SOCIAL_DATABASE_ID 在 .env.local）
-- QMD 索引已擴展：CycloneOS/ + 其他遺漏資料夾全部加入（1146→1249 篇）
+3 個 commit：
+- discord-bot/CLAUDE.md — Bot 專用設定檔（指令規則、session 追蹤、Obsidian 寫入規則）
+- scripts/discord-bot.sh — while-loop wrapper + working dir 改 ~/discord-bot/
+- CLAUDE.md — bot 規則搬到 discord-bot/CLAUDE.md，主檔只留指向說明
 
-### 關鍵檔案
-- src/components/skills/workstations/social/ — 前端元件（6 個）
-- src/app/api/social/ — API routes（5 個：generate, publish-notion, history, upload-image, qmd-search）
-- src/lib/social/ — prompts.ts, notion.ts
-- src/lib/notion-utils.ts — 共用 markdownToBlocks（從 yt-notes 抽出）
-- src/stores/social-store.ts — Zustand store
-- docs/superpowers/specs/2026-04-06-social-posting-module-design.md
-- docs/superpowers/plans/2026-04-07-social-posting-module.md
+### 架構變更
+- Bot 不再讀 CycloneOS/CLAUDE.md（避免載入無關的教育工作站、特推會等 context）
+- Bot 使用獨立工作目錄 ~/discord-bot/，啟動腳本自動從 repo 複製最新 CLAUDE.md
+- while-loop 自動重啟（bot exit 後 2 秒重開）
 
-## 已完成（session-08）：特推會 Phase 2
+## 最優先：部署驗證（Task 4 + Task 5）
 
-雙模式面板（備會 prep / 記錄 record）+ 多格式產出：
-- 備會模式：產出會前附件（.docx + GitHub Pages HTML）
-- 參考文件上傳（會議層級 + 案由層級，拖曳/瀏覽）
-- .md 暫存（Obsidian 內可讀，面板可載入還原）
-- Style-C HTML 模板（報紙排版風）
-- PII 遮蔽（TS + Python 雙端，.md 存全名，產出時遮蔽）
-- GitHub Pages push（共用模組，簡報和會議共用）
-- 未完成會議自動偵測 + 載入
+### Task 4：驗證 while-loop 重啟機制
 
-### 關鍵檔案
-- src/lib/education/pii-mask.ts, spc-session.ts
-- src/lib/github-pages.ts — 共用 GitHub Pages push
-- src/components/.../spc-meeting/ — ref-file-picker, session-loader
-- src/app/api/education/spc-meeting/ — save-draft, load routes
-- scripts/education/html_template.py — Style-C HTML
-- docs/superpowers/specs/2026-04-07-spc-meeting-phase2-design.md
-- docs/superpowers/plans/2026-04-07-spc-meeting-phase2.md
+1. `git pull` 拉最新
+2. `bash scripts/discord-bot.sh` 啟動 bot
+3. `tmux ls` 確認 session 存在
+4. `ls ~/discord-bot/CLAUDE.md` 確認 CLAUDE.md 已複製
+5. `tmux attach -t discord-bot` 進入確認 while-loop 運行
+6. Ctrl+C 中斷 Claude Code → 確認 2 秒後自動重啟
+7. Ctrl+B D 離開 tmux
 
-## 最優先：Smoke Test 兩個新模組
+### Task 5：測試 Bot 指令（Discord 端）
 
-### 社群發文模組
-1. Dashboard → Skills → 社群發文模組
-2. 輸入文字 → 選 FB + IG → 知識分享 → 生成
-3. 複製文字 → 存到 Notion → 確認 Notion page 欄位正確
-4. QMD 搜尋筆記 → 載入 → 生成
-5. 圖片上傳 → 發布 → 確認 Image URLs 欄位
+1. `/context` → 確認回傳運行時間、訊息數、context 數據
+2. 發 2-3 則一般訊息讓 bot 處理
+3. 再次 `/context` → 確認訊息數和摘要更新
+4. `/session-log` → 確認 Obsidian Discord/bot-logs/ 有新檔案，格式正確
+5. `/new` → 確認寫日誌 + handoff + 通知「重啟中」+ bot 重新上線
+6. 重啟後 `/context` → 確認 session 是乾淨的
 
-### 特推會 Phase 2
-1. 切換備會/記錄模式
-2. 備會模式：填資料 → 上傳參考文件 → 生成 .docx + HTML
-3. 暫存 → 關閉 → 重開 → 確認載入還原
-4. 需先建立 cyclone-tw/meetings GitHub repo
-
-### 已知待修
-- hashtags 型別不一致（string vs string[]，prompt/store/API 之間）
-- PostHistory status 值處理（Notion 回中文，store 定義英文）
-- openai module build error（pre-existing）
-- runPython helper 重複（generate + draft routes）
-
-## 其他主線待續
-
-### 主線：學生資料 Spec
-- 建立學生個別 .md 檔（存 Obsidian），作為跨模組共用資料層
-- IEP 會議、特推會、服務計劃、課程計劃都能讀取帶入
-- 需設計 .md 格式（frontmatter 欄位）和整理流程
-
-### 主線：IEP 會議面板 Phase 2
-- 共用元件已就位，需新增 AudioUploader, WhisperProgress 等
-- 設計文件：docs/superpowers/specs/2026-04-05-meeting-workstation-ui-design.md
-
-### 社群模組後續
-- Discord bot 指令整合（API 已共用）
-- Cloudflare R2 圖片儲存（替代 public/uploads/）
-- n8n workflow 設定
-- Notion Database Views 建立
+### 設計文件
+- docs/superpowers/specs/2026-04-08-discord-bot-commands-design.md
+- docs/superpowers/plans/2026-04-08-discord-bot-commands.md
 
 ## 環境資訊（Mac Mini）
 - Discord Bot 用 tmux 常駐：tmux attach -t discord-bot
 - Dashboard 用 launchd 常駐：port 3000 / Tailscale 8445
 - QMD MCP 已接入 Claude Code（stdio 模式）
-- QMD 索引設定：~/.config/qmd/index.yml（16 collections）
 - whisper medium + LibreOffice 已安裝
-
-## 設計規則
-- Dashboard 面板必須滿版響應式（不能用 max-w-* 限制）
-- 使用者主要在 Mac Mini 桌面環境操作
-- Notion 屬性名稱用英文（避免中英混用 API 對接問題）
 ```
 
 ---
