@@ -36,55 +36,55 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 
 ---
 
-## 🔜 Next Session: Discord Bot 部署驗證 + 指令測試
+## 🔜 Next Session: Slash Commands 驗收 + Hook 驗證
 
 > 複製以下內容作為新 session 的第一句話，然後刪除此區塊。
 
 ```
-接續 MacBook session（2026-04-08）。Discord Bot 指令系統已實作，需要在 Mac Mini 部署驗證。
+接續 session-01（2026-04-10，Mac Mini）。Slash commands 已實作並部署，/context 已測試通過。
 
-## 剛完成的變更（已 push 到 main）
+## 已完成
+- Slash handler companion script（discord-bot/slash-handler.ts）— 獨立 Bun process 處理 /context、/session-log、/new
+- PostToolUse hook（discord-bot/hooks/log-activity.sh）— 自動記錄 bot reply/react 到 .bot-activity.jsonl
+- Guild slash commands 已註冊在 Cyclone server（即時生效）
+- /context 測試通過（運行時間、訊息數、摘要正確）
+- Bot while-loop 重啟機制驗證通過
 
-3 個 commit：
-- discord-bot/CLAUDE.md — Bot 專用設定檔（指令規則、session 追蹤、Obsidian 寫入規則）
-- scripts/discord-bot.sh — while-loop wrapper + working dir 改 ~/discord-bot/
-- CLAUDE.md — bot 規則搬到 discord-bot/CLAUDE.md，主檔只留指向說明
+## 最優先：完成 Integration Test
 
-### 架構變更
-- Bot 不再讀 CycloneOS/CLAUDE.md（避免載入無關的教育工作站、特推會等 context）
-- Bot 使用獨立工作目錄 ~/discord-bot/，啟動腳本自動從 repo 複製最新 CLAUDE.md
-- while-loop 自動重啟（bot exit 後 2 秒重開）
+### 1. Hook 驗證
+- 發訊息讓 bot 回覆 → 檢查 `~/discord-bot/.bot-activity.jsonl` 有記錄
+- 如果沒有記錄，確認 hook settings 有被 Claude Code 載入（`~/discord-bot/.claude/settings.json`）
+- 可能需要用完整 `scripts/discord-bot.sh` 重新部署（目前 bot 是手動簡化啟動的）
 
-## 最優先：部署驗證（Task 4 + Task 5）
+### 2. /session-log 測試
+- Discord 打 `/session-log`
+- 確認 Obsidian `Discord/bot-logs/` 有新檔案
+- 確認格式正確（frontmatter + 任務表格 + 統計）
 
-### Task 4：驗證 while-loop 重啟機制
+### 3. /new 測試
+- Discord 打 `/new`
+- 確認寫日誌 + bot 重啟 + activity log 清空
+- 重啟後 `/context` 確認乾淨 session
 
-1. `git pull` 拉最新
-2. `bash scripts/discord-bot.sh` 啟動 bot
-3. `tmux ls` 確認 session 存在
-4. `ls ~/discord-bot/CLAUDE.md` 確認 CLAUDE.md 已複製
-5. `tmux attach -t discord-bot` 進入確認 while-loop 運行
-6. Ctrl+C 中斷 Claude Code → 確認 2 秒後自動重啟
-7. Ctrl+B D 離開 tmux
+### 4. /context token 數據
+- 目前顯示 N/A — tmux capture-pane 可能在新啟動方式下抓不到 status bar
+- 調查 alternate screen buffer 問題
 
-### Task 5：測試 Bot 指令（Discord 端）
+### 5. scripts/discord-bot.sh 完整測試
+- 用完整腳本重新部署（目前 bot 用簡化腳本手動啟動）
+- 確認 hook settings 複製、git init、slash handler 都正常
 
-1. `/context` → 確認回傳運行時間、訊息數、context 數據
-2. 發 2-3 則一般訊息讓 bot 處理
-3. 再次 `/context` → 確認訊息數和摘要更新
-4. `/session-log` → 確認 Obsidian Discord/bot-logs/ 有新檔案，格式正確
-5. `/new` → 確認寫日誌 + handoff + 通知「重啟中」+ bot 重新上線
-6. 重啟後 `/context` → 確認 session 是乾淨的
-
-### 設計文件
-- docs/superpowers/specs/2026-04-08-discord-bot-commands-design.md
-- docs/superpowers/plans/2026-04-08-discord-bot-commands.md
+## 其他主線
+- 社群發文模組 + 特推會 Phase 2 smoke test
+- 學生資料 .md 格式規劃
+- IEP 會議面板 Phase 2
 
 ## 環境資訊（Mac Mini）
-- Discord Bot 用 tmux 常駐：tmux attach -t discord-bot
-- Dashboard 用 launchd 常駐：port 3000 / Tailscale 8445
-- QMD MCP 已接入 Claude Code（stdio 模式）
-- whisper medium + LibreOffice 已安裝
+- Bot: tmux discord-bot（bot-loop.sh while-loop）
+- Slash handler: tmux slash-handler（bun run slash-handler.ts）
+- Dashboard: launchd 常駐 port 3000 / Tailscale 8445
+- QMD MCP 已接入（stdio 模式）
 ```
 
 ---
