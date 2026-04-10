@@ -34,22 +34,12 @@ tmux kill-session -t slash-handler 2>/dev/null
 tmux new-session -d -s slash-handler -c "$HANDLER_DIR" \
   "DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN OBSIDIAN_VAULT=$OBSIDIAN_VAULT BOT_DIR=$BOT_DIR bun run slash-handler.ts; echo 'Slash handler exited, press Enter to restart'; read"
 
+# ── Copy bot loop script ─────────────────────────────────────────────
+cp "$REPO_DIR/discord-bot/bot-loop.sh" "$BOT_DIR/bot-loop.sh"
+chmod +x "$BOT_DIR/bot-loop.sh"
+
 # ── Start bot (while-loop auto-restart) ──────────────────────────────
-tmux new-session -d -s discord-bot -c "$BOT_DIR" "
-while true; do
-  echo \"[\$(date)] Starting Discord bot...\"
-  # Write startup state
-  CLAUDE_VER=\$(claude --version 2>/dev/null | head -1 || echo 'unknown')
-  printf '{\"startedAt\":\"%s\",\"version\":\"%s\"}\n' \"\$(date +%Y-%m-%dT%H:%M:%S%z)\" \"\$CLAUDE_VER\" > \"$BOT_DIR/.bot-startup.json\"
-  # Clear activity log for fresh session
-  > \"$BOT_DIR/.bot-activity.jsonl\"
-  claude --channels plugin:discord@claude-plugins-official \\
-    --dangerously-skip-permissions --model sonnet
-  EXIT_CODE=\$?
-  echo \"[\$(date)] Bot exited with code \$EXIT_CODE, restarting in 2s...\"
-  sleep 2
-done
-"
+tmux new-session -d -s discord-bot -c "$BOT_DIR" "$BOT_DIR/bot-loop.sh"
 
 echo "Discord bot started in tmux session 'discord-bot'"
 echo "Slash handler started in tmux session 'slash-handler'"
