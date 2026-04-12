@@ -94,3 +94,15 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 Bot 使用獨立工作目錄和專用 CLAUDE.md，規則定義在 `discord-bot/CLAUDE.md`。
 
 啟動：`bash scripts/discord-bot.sh`（tmux while-loop，auto-restart）
+
+### Bot 故障排查（使用者提到 bot 有問題時自動執行）
+
+當使用者反映 bot 沒反應、掛了、不回訊息等問題時，**不要直接重啟**，先依序檢查：
+
+1. `tmux list-sessions` — 確認 `discord-bot` 和 `slash-handler` session 是否存在
+2. `tmux capture-pane -t discord-bot -p -S -30` — 看 bot 最近輸出，是否卡住或已斷線
+3. `tmux capture-pane -t slash-handler -p -S -20` — 看 slash handler 狀態
+4. `cat ~/discord-bot/bot-loop.log` — bot 啟動/退出歷史
+5. `cat ~/discord-bot/slash-handler.log` — slash handler crash 紀錄與原因
+
+根據日誌判斷原因後，再決定是否需要 `bash scripts/discord-bot.sh` 重新部署。

@@ -30,9 +30,9 @@ cd "$REPO_DIR"
 tmux kill-session -t discord-bot 2>/dev/null
 tmux kill-session -t slash-handler 2>/dev/null
 
-# ── Start slash handler ──────────────────────────────────────────────
+# ── Start slash handler (while-loop auto-restart) ───────────────────
 tmux new-session -d -s slash-handler -c "$HANDLER_DIR" \
-  "DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN OBSIDIAN_VAULT=$OBSIDIAN_VAULT BOT_DIR=$BOT_DIR bun run slash-handler.ts; echo 'Slash handler exited, press Enter to restart'; read"
+  "DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN OBSIDIAN_VAULT=$OBSIDIAN_VAULT BOT_DIR=$BOT_DIR bash $HANDLER_DIR/slash-loop.sh"
 
 # ── Copy bot loop script ─────────────────────────────────────────────
 cp "$REPO_DIR/discord-bot/bot-loop.sh" "$BOT_DIR/bot-loop.sh"
