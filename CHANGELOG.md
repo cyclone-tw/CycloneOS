@@ -1,5 +1,15 @@
 # CycloneOS Changelog
 
+## 2026-04-19
+
+- SessionEnd hook 自動萃取：對話結束時背景呼叫 `claude -p --model haiku` 讀 transcript，產出 YAML 格式交接單（Summary / Decisions / Pending / Knowledge 四欄）寫入 Obsidian `CycloneOS/sessions/YYYY-MM-DD-session-N-auto.md`
+- AI provider 抽象層：`~/.cyclone/scripts/lib/ai-extract.sh` 支援 claude / gemini / codex，openai-api / ollama 留 stub；透過 `CYCLONE_AI_PROVIDER` env 切換，符合 CycloneOS 最高原則「AI Agent 無關性」
+- Transcript 格式 adapter：`~/.cyclone/scripts/lib/transcript-parse.sh` 處理 Claude Code jsonl（defensive jq 支援 string/array content，`fromjson?` 跳過壞行）
+- SessionStart Daily Brief 升級：現在顯示上次 session log 的 Summary + Pending，新 session 開場立即接手
+- Hook 測試框架：`~/.cyclone/scripts/tests/` 純 bash 測試腳本，`run-all.sh` 一鍵跑全部（5 個測試檔，AI 呼叫可選 `CYCLONE_RUN_AI_TESTS=1`）
+- 修復 `CYCLONE_IN_HOOK` 遞迴 guard：5 個 hook 開頭皆檢查此 env var，避免子 `claude -p` 觸發父 hook 造成 session log 污染
+- 修復 `save-session.sh` 原本假設「SessionEnd 拿不到 transcript」——Hook stdin 實際有 `transcript_path`，現在正確讀取並傳給 background worker
+
 ## 2026-04-04
 - 修復 Invalid API Key 問題（移除 .zshrc 無效 ANTHROPIC_API_KEY）
 - 新增手機版 responsive layout（底部導航列 + dashboard/chat 切換）
