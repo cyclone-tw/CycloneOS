@@ -60,3 +60,6 @@ scripts/education/__pycache__/
 # discord-bot dependencies
 discord-bot/node_modules/
 discord-bot/bun.lock
+
+# claude code local settings
+.claude/settings.local.json
