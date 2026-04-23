@@ -1,5 +1,10 @@
 // dashboard/src/lib/gmail-client.ts
-import { google } from "googleapis";
+import { google, type gmail_v1 } from "googleapis";
+
+type GmailApiMessage = gmail_v1.Schema$Message;
+type GmailApiMessagePart = gmail_v1.Schema$MessagePart;
+type GmailApiHeader = gmail_v1.Schema$MessagePartHeader;
+type GmailApiBody = gmail_v1.Schema$MessagePartBody;
 
 function getAuth() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -57,28 +62,28 @@ export interface GmailThreadMessage {
   attachments?: GmailAttachment[];
 }
 
-function getHeader(headers: { name: string; value: string }[], name: string): string {
-  return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
+function getHeader(headers: GmailApiHeader[] | null | undefined, name: string): string {
+  return headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
 }
 
-function decodeBody(body: { data?: string; size?: number }): string {
-  if (!body.data) return "";
+function decodeBody(body: GmailApiBody | null | undefined): string {
+  if (!body?.data) return "";
   return Buffer.from(body.data, "base64url").toString("utf-8");
 }
 
-function extractBody(payload: any): { body: string; mimeType: string } {
+function extractBody(payload: GmailApiMessagePart | null | undefined): { body: string; mimeType: string } {
   // Simple text body
-  if (payload.body?.data) {
+  if (payload?.body?.data) {
     return { body: decodeBody(payload.body), mimeType: payload.mimeType ?? "text/plain" };
   }
 
   // Multipart — prefer text/html, fallback to text/plain
-  if (payload.parts) {
-    const htmlPart = payload.parts.find((p: any) => p.mimeType === "text/html");
+  if (payload?.parts?.length) {
+    const htmlPart = payload.parts.find((part) => part.mimeType === "text/html");
     if (htmlPart?.body?.data) {
       return { body: decodeBody(htmlPart.body), mimeType: "text/html" };
     }
-    const textPart = payload.parts.find((p: any) => p.mimeType === "text/plain");
+    const textPart = payload.parts.find((part) => part.mimeType === "text/plain");
     if (textPart?.body?.data) {
       return { body: decodeBody(textPart.body), mimeType: "text/plain" };
     }
@@ -94,11 +99,11 @@ function extractBody(payload: any): { body: string; mimeType: string } {
   return { body: "", mimeType: "text/plain" };
 }
 
-export function parseMessage(msg: any): GmailMessage {
+export function parseMessage(msg: GmailApiMessage): GmailMessage {
   const headers = msg.payload?.headers ?? [];
   return {
-    id: msg.id,
-    threadId: msg.threadId,
+    id: msg.id ?? "",
+    threadId: msg.threadId ?? "",
     subject: getHeader(headers, "Subject"),
     from: getHeader(headers, "From"),
     to: getHeader(headers, "To"),
@@ -109,10 +114,10 @@ export function parseMessage(msg: any): GmailMessage {
   };
 }
 
-function extractInlineAttachments(payload: any): GmailAttachment[] {
+function extractInlineAttachments(payload: GmailApiMessagePart | null | undefined): GmailAttachment[] {
   const attachments: GmailAttachment[] = [];
 
-  function walk(part: any) {
+  function walk(part: GmailApiMessagePart | null | undefined) {
     if (!part) return;
     const headers = part.headers ?? [];
     const contentId = getHeader(headers, "Content-ID");
@@ -141,12 +146,12 @@ function extractInlineAttachments(payload: any): GmailAttachment[] {
   return attachments;
 }
 
-export function parseThreadMessage(msg: any): GmailThreadMessage {
+export function parseThreadMessage(msg: GmailApiMessage): GmailThreadMessage {
   const headers = msg.payload?.headers ?? [];
   const { body, mimeType } = extractBody(msg.payload ?? {});
   const attachments = extractInlineAttachments(msg.payload ?? {});
   return {
-    id: msg.id,
+    id: msg.id ?? "",
     from: getHeader(headers, "From"),
     to: getHeader(headers, "To"),
     date: getHeader(headers, "Date"),

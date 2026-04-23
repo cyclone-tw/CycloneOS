@@ -55,7 +55,7 @@ function MessageBubble({ msg, isLast }: { msg: GmailThreadMessage; isLast: boole
       ALLOWED_ATTR: ["href", "src", "alt", "title", "class", "style", "target", "rel"],
       ALLOW_DATA_ATTR: false,
     });
-  }, [msg.body, msg.mimeType, msg.attachments]);
+  }, [msg]);
 
   return (
     <div className={`rounded-lg border border-cy-input/30 bg-cy-card p-3 ${isLast ? "" : "opacity-70"}`}>

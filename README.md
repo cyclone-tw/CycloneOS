@@ -1,4 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Environment Notes
+
+- The dashboard in this repo is developed and built on the local machine.
+- `discord-bot/` is a separate runtime target that is intended to run on the Mac mini.
+- Validate the Discord bot on the Mac mini with Bun. Missing `bun-types` or other Bun-only dependencies on the MacBook should not be treated as a dashboard failure.
+
+## Dashboard
+
+This is a [Next.js](https://nextjs.org) dashboard project bootstrapped from `create-next-app` and then extended for CycloneOS.
 
 ## Getting Started
 
@@ -14,9 +22,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the dashboard.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

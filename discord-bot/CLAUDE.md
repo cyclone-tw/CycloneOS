@@ -1,5 +1,11 @@
 # Discord Bot 設定
 
+## 執行環境
+
+- `discord-bot/` 只在 Mac mini 上執行與驗證。
+- 這個目錄用 Bun 當主要執行與驗證環境。
+- 如果在 MacBook 上看不到 `bun-types` 或其他 Bun 專用依賴，不應直接判定 bot 已損壞；請以 Mac mini 上的 Bun 驗證結果為準。
+
 ## 行為規則
 
 收到訊息時系統自動加 👀。任務結束後用 `react` 工具加：✅ 完成 / ❌ 失敗。

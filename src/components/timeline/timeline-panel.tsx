@@ -42,19 +42,18 @@ function formatDate(dateStr: string): string {
 
 export function TimelinePanel() {
   const [data, setData] = useState<TimelineData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settledDays, setSettledDays] = useState<number | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [days, setDays] = useState(30);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const loading = settledDays !== days;
 
   useEffect(() => {
-    setLoading(true);
-    setExpandedDates(new Set());
     fetch(`/api/timeline?days=${days}`)
       .then((res) => res.json())
       .then((d: TimelineData) => setData(d))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => setData({ grouped: {}, stats: { total: 0, dev: 0, work: 0, auto: 0 } }))
+      .finally(() => setSettledDays(days));
   }, [days]);
 
   const toggleDate = (date: string) => {
@@ -92,7 +91,11 @@ export function TimelinePanel() {
         <div className="flex items-center gap-2">
           <select
             value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
+            onChange={(e) => {
+              setExpandedDates(new Set());
+              setData(null);
+              setDays(Number(e.target.value));
+            }}
             className="rounded-md bg-cy-input/40 px-2 py-1 text-xs text-cy-muted outline-none"
           >
             <option value={7}>7 天</option>

@@ -11,24 +11,29 @@ interface PreviousDecisionsProps {
 }
 
 export function PreviousDecisions({ academicYear, meetingNumber, value, onChange }: PreviousDecisionsProps) {
-  const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const requestKey =
+    academicYear > 0 && meetingNumber > 1
+      ? `${academicYear}-${meetingNumber}`
+      : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const loading = requestKey !== null && settledKey !== requestKey;
+  const loaded = requestKey !== null && loadedKey === requestKey;
 
   useEffect(() => {
-    if (loaded || meetingNumber <= 1 || !academicYear) return;
+    if (!requestKey || settledKey === requestKey) return;
 
-    setLoading(true);
     fetch(`/api/education/spc-meeting/history?year=${academicYear}&meetingNumber=${meetingNumber}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.previousDecisions && !value) {
           onChange(data.previousDecisions);
         }
-        setLoaded(true);
+        setLoadedKey(requestKey);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [academicYear, meetingNumber, loaded, value, onChange]);
+      .finally(() => setSettledKey(requestKey));
+  }, [academicYear, meetingNumber, onChange, requestKey, settledKey, value]);
 
   return (
     <div>

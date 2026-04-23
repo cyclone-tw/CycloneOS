@@ -25,6 +25,8 @@ export function TranscribeWorkstation() {
   const [activeJob, setActiveJob] = useState<JobData | null>(null);
   const [history, setHistory] = useState<JobData[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeJobId = activeJob?.id;
+  const isProcessing = activeJob?.status === "processing";
 
   useEffect(() => {
     fetch("/api/transcribe/status")
@@ -36,11 +38,11 @@ export function TranscribeWorkstation() {
   }, []);
 
   useEffect(() => {
-    if (!activeJob || activeJob.status !== "processing") return;
+    if (!activeJobId || !isProcessing) return;
 
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`/api/transcribe/status?jobId=${activeJob.id}`);
+        const res = await fetch(`/api/transcribe/status?jobId=${activeJobId}`);
         const data = await res.json();
         setActiveJob(data);
 
@@ -58,7 +60,7 @@ export function TranscribeWorkstation() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [activeJob?.id, activeJob?.status]);
+  }, [activeJobId, isProcessing]);
 
   const handleSubmit = useCallback(async (url: string) => {
     try {
