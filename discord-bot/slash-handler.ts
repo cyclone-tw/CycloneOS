@@ -1,6 +1,6 @@
-import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'fs'
+import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync } from 'fs'
 import { execSync } from 'child_process'
-import { join } from 'path'
+import { basename, join } from 'path'
 import {
   Client,
   GatewayIntentBits,
@@ -31,6 +31,19 @@ interface ActivityEntry {
 interface TokenInfo {
   tokens: string   // e.g. "45K"
   percent: string  // e.g. "23%"
+}
+
+interface PaneStatus {
+  lastLine: string
+  isThinking: boolean
+  isCallingTool: boolean
+  recentDiscordInput?: string
+}
+
+interface OutputEntry {
+  path: string
+  modifiedAt: Date
+  size: number
 }
 
 // ── State Readers ───────────────────────────────────────────────────
@@ -70,6 +83,76 @@ function readTmuxTokens(): TokenInfo | null {
   }
 }
 
+function readPaneText(lines = 120): string {
+  try {
+    return execSync(`tmux capture-pane -t discord-bot -p -S -${lines}`, {
+      encoding: 'utf8',
+      timeout: 3000,
+    })
+  } catch {
+    return ''
+  }
+}
+
+function readPaneStatus(): PaneStatus | null {
+  const pane = readPaneText()
+  if (!pane.trim()) return null
+
+  const lines = pane
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line =>
+      line &&
+      !line.startsWith('─') &&
+      !line.startsWith('■') &&
+      !line.startsWith('❯')
+    )
+
+  const recentLines = lines.slice(-20)
+  const recentText = recentLines.join('\n')
+  const lastLine = lines.at(-1) ?? '無可讀狀態'
+  const recentDiscordInput = [...lines].reverse().find(line => line.startsWith('← discord'))
+
+  return {
+    lastLine: truncate(lastLine, 140),
+    isThinking: /Envisioning|Cogitating|Churned|Crunched|思考|Thinking/i.test(recentText),
+    isCallingTool: /Calling plugin:discord|Bash\(|Background command/i.test(recentText),
+    recentDiscordInput: recentDiscordInput ? truncate(recentDiscordInput, 120) : undefined,
+  }
+}
+
+function collectRecentOutputs(): OutputEntry[] {
+  const roots = [
+    '/tmp/yt-whisper',
+    BOT_DIR,
+    OBSIDIAN_VAULT ? join(OBSIDIAN_VAULT, 'Discord', 'bot-logs') : '',
+    OBSIDIAN_VAULT ? join(OBSIDIAN_VAULT, 'Draco', 'yt-notes') : '',
+  ].filter(Boolean)
+
+  const outputs: OutputEntry[] = []
+  const cutoffMs = Date.now() - 24 * 60 * 60 * 1000
+
+  for (const root of roots) {
+    try {
+      if (!existsSync(root)) continue
+      for (const name of readdirSync(root)) {
+        if (name.startsWith('.')) continue
+        const path = join(root, name)
+        const stat = statSync(path)
+        if (stat.isDirectory()) continue
+        if (stat.mtime.getTime() < cutoffMs) continue
+        outputs.push({ path, modifiedAt: stat.mtime, size: stat.size })
+      }
+    } catch {
+      // Best-effort status only.
+    }
+  }
+
+  return outputs
+    .sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime())
+    .slice(0, 6)
+}
+
 // ── Formatting Helpers ──────────────────────────────────────────────
 
 function formatUptime(startedAt: string): string {
@@ -84,6 +167,17 @@ function formatUptime(startedAt: string): string {
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text
   return text.slice(0, maxLen) + '...'
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
+}
+
+function formatOutput(entry: OutputEntry): string {
+  const hhmm = `${padTwo(entry.modifiedAt.getHours())}:${padTwo(entry.modifiedAt.getMinutes())}`
+  return `  • ${hhmm} ${basename(entry.path)} (${formatBytes(entry.size)})\n    ${entry.path}`
 }
 
 function buildRecentSummaries(entries: ActivityEntry[], limit = 5): string[] {
@@ -130,9 +224,12 @@ function handleContext(): string {
   const startup = readStartup()
   const entries = readActivity()
   const tokenInfo = readTmuxTokens()
+  const paneStatus = readPaneStatus()
+  const outputs = collectRecentOutputs()
 
   const uptime = startup ? formatUptime(startup.startedAt) : '未知'
   const replyCount = entries.filter(e => e.tool === 'reply').length
+  const lastActivity = entries.at(-1)
   const summaries = buildRecentSummaries(entries)
   const tokenLine = tokenInfo
     ? `${tokenInfo.tokens} tok / ${tokenInfo.percent} used`
@@ -141,12 +238,30 @@ function handleContext(): string {
   let msg = `🤖 **Bot Session 狀態**\n─────────────────\n`
   msg += `⏱ 運行時間：${uptime}\n`
   msg += `📨 已處理訊息：${replyCount} 則\n`
+  if (lastActivity) {
+    msg += `🕒 最後 Discord 動作：${lastActivity.ts} / ${lastActivity.tool}\n`
+  }
+  if (paneStatus) {
+    const state = paneStatus.isThinking
+      ? '思考或執行中'
+      : paneStatus.isCallingTool
+        ? '工具呼叫中'
+        : '待命或剛完成'
+    msg += `📡 目前狀態：${state}\n`
+    if (paneStatus.recentDiscordInput) msg += `📥 最近輸入：${paneStatus.recentDiscordInput}\n`
+    msg += `🧾 Pane 最後訊息：${paneStatus.lastLine}\n`
+  }
 
   if (summaries.length > 0) {
     msg += `📋 最近處理：\n${summaries.join('\n')}\n`
   }
 
+  if (outputs.length > 0) {
+    msg += `📁 最近 24h 產物：\n${outputs.map(formatOutput).join('\n')}\n`
+  }
+
   msg += `🧠 Context：${tokenLine}`
+  msg += `\n\n卡住時可用 /new 重啟；長任務產物先看上面的「最近 24h 產物」。`
   return msg
 }
 
