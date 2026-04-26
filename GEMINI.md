@@ -64,12 +64,12 @@ Conventional Commits 格式：
 
 | 用途 | 路徑 |
 |------|------|
-| CycloneOS Dashboard | `~/CycloneOS/` |
+| CycloneOS Dashboard | `~/Cyclone-System/CycloneOS/` |
 | AI Agent 全域配置 | `~/.claude/` |
 | 系統配置 + Hooks | `~/.cyclone/` |
 | Obsidian Vault | Google Drive CloudStorage（路徑因機器而異，從 `~/.cyclone/config.json` 讀取） |
 | Git repos | `~/Github/01-Repo/` |
-| Discord Bot 工作目錄 | `~/discord-bot/` |
+| Discord Bot 工作目錄 | `~/discord-bot/`（Mac mini）/ `~/Cyclone-System/CycloneOS/discord-bot/`（MacBook） |
 
 ---
 
@@ -79,3 +79,8 @@ Conventional Commits 格式：
 - 一律用工具的檔案搜尋 + 直接寫入
 - Markdown frontmatter 用 YAML 格式
 - 內部連結用 `[[wiki link]]` 語法
+- 寫入任何 Markdown 到 Obsidian 前，必須先讀 vault 共用規範：
+  - `000_Agent/PROJECT_ROUTING.md`
+  - `000_Agent/OBSIDIAN_METADATA_SCHEMA.md`
+- 不得自創新的 vault 頂層資料夾或 frontmatter 欄位；路由不明時寫入
+  `_Agent-Inbox/`，並使用 `status: needs-review`

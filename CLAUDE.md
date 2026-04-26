@@ -24,6 +24,17 @@ When the user says "commit"（或 `/commit`、「commit 一下」），自動執
 - 結束 session 時執行 `/session-log`
 - 需要 handoff 時執行 `/handoff`
 
+## Obsidian 寫入治理
+
+任何 agent 要把 Markdown 寫入 Obsidian vault 前，必須先讀並遵守：
+
+- `/Users/cyclone/Library/CloudStorage/GoogleDrive-cyclonetw@gmail.com/我的雲端硬碟/Obsidian-Cyclone/000_Agent/PROJECT_ROUTING.md`
+- `/Users/cyclone/Library/CloudStorage/GoogleDrive-cyclonetw@gmail.com/我的雲端硬碟/Obsidian-Cyclone/000_Agent/OBSIDIAN_METADATA_SCHEMA.md`
+
+CycloneOS 程式碼改動留在本 repo；Obsidian 只放記憶、計畫、log、handoff
+和 reference。不要建立新的 vault 頂層資料夾，不要自創 frontmatter 欄位。
+路由不明時寫到 `_Agent-Inbox/`，`status: needs-review`。
+
 ---
 
 ## QMD 記憶系統

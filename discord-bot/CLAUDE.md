@@ -89,13 +89,17 @@ Bot 在 session 存續期間，必須在 conversation context 中維護以下紀
 
 ```
 ---
+title: Bot Log YYYY-MM-DD #N
 type: bot-log
-date: YYYY-MM-DD
-session: N
-duration: Xh Ym
-message-count: N
-token-usage: XXXK
-context-pct: X%
+project: CycloneOS
+source_agent: discord-bot
+source: mac-mini/discord-bot
+status: completed
+created: YYYY-MM-DDTHH:mm:ss+08:00
+updated: YYYY-MM-DDTHH:mm:ss+08:00
+tags:
+  - project/cycloneos
+  - type/bot-log
 ---
 
 # Bot Log YYYY-MM-DD #N
@@ -128,6 +132,14 @@ context-pct: X%
 Bot 寫入 Obsidian 時，依執行機器使用對應路徑。首次執行時用 `Glob` 搜尋含 `Obsidian-Cyclone` 的 CloudStorage 路徑來定位。
 
 寫入流程一律使用 `Glob` + `Write`，禁止用 Bash `ls`/`find` 探索雲端路徑。
+
+寫入任何 Markdown 前，必須讀取並遵守 vault 共用規範：
+
+- `000_Agent/PROJECT_ROUTING.md`
+- `000_Agent/OBSIDIAN_METADATA_SCHEMA.md`
+
+不要自創新的頂層資料夾或 frontmatter 欄位。路由不明時寫入
+`_Agent-Inbox/`，並使用 `status: needs-review`。
 
 ## Slash Commands（外部處理）
 
